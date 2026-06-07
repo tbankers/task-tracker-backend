@@ -1,1 +1,1 @@
-тут будет бэкэнд для таск-трэкера
+this is repo for database running of task-tracker
