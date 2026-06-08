@@ -39,7 +39,7 @@ CREATE TABLE tasks (
     created_by UUID REFERENCES users(id) ON DELETE SET NULL, 
     created_at TIMESTAMP, 
     updated_at TIMESTAMP, 
-    assigned_id UUID, 
+    assigned_id UUID REFERENCES users(id) ON DELETE SET NULL, 
     name TEXT, 
     description TEXT, 
     status task_status
