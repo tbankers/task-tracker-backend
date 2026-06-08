@@ -1,5 +1,5 @@
 .PHONY: compile-api openapi-format
 compile-api:
-	 cd API && go tool oapi-codegen -config config.yaml api.yaml
+	cd tools && go tool oapi-codegen -config ../API/config.yaml ../API/api.yaml
 openapi-format:
 	npx openapi-format API/api.yaml -o API/api.yaml --split
