@@ -1,0 +1,11 @@
+type: object
+properties:
+  code:
+    type: string
+    example: INVALID_UUID
+  message:
+    type: string
+    example: The provided string is not a valid UUID
+required:
+  - code
+  - message

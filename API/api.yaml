@@ -1,0 +1,29 @@
+openapi: 3.0.3
+info:
+  title: Task Tracker API
+  version: 1.0.0
+  description: task-tracker API.
+paths:
+  /workspaces/{workspace_id}/boards:
+    $ref: paths/workspaces_{workspace_id}_boards.yaml
+  /boards/{board_id}/tasks:
+    $ref: paths/boards_{board_id}_tasks.yaml
+  /tasks/{task_id}:
+    $ref: paths/tasks_{task_id}.yaml
+components:
+  schemas:
+    Board:
+      $ref: components/schemas/Board.yaml
+    Task:
+      $ref: components/schemas/Task.yaml
+    TaskStatus:
+      $ref: components/schemas/TaskStatus.yaml
+    ErrorResponse:
+      $ref: components/schemas/ErrorResponse.yaml
+  responses:
+    BadRequest:
+      $ref: components/responses/BadRequest.yaml
+    NotFound:
+      $ref: components/responses/NotFound.yaml
+    InternalServerError:
+      $ref: components/responses/InternalServerError.yaml

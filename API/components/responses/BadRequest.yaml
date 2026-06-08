@@ -1,0 +1,5 @@
+description: Невалидные входные данные или неверный формат UUID
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/ErrorResponse.yaml
