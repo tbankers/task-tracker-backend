@@ -42,5 +42,5 @@ CREATE TABLE tasks (
     assigned_id UUID REFERENCES users(id) ON DELETE SET NULL, 
     name TEXT, 
     description TEXT, 
-    status task_status
+    status task_status DEFAULT 'to_do'
 );
