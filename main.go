@@ -140,7 +140,6 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 }
 
 func (s *TaskTrackerServer) UpdateTask(w http.ResponseWriter, r *http.Request, taskID uuid.UUID) {
-	
 
 	var body api.UpdateTaskJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {

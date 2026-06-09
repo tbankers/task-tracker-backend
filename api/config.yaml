@@ -2,5 +2,6 @@ package: api
 generate:
   - types       
   - client      
-  - chi-server  
+  - chi-server
+  - strict-server  
 output: api.gen.go
