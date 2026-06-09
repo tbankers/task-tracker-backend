@@ -15,7 +15,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	api "github.com/tbankers/task-tracker-backend/api/components/schemas/Board.yaml"
+	api "github.com/tbankers/task-tracker-backend/api"
 	db "github.com/tbankers/task-tracker-backend/db"
 )
 
@@ -121,7 +121,7 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 	}
 
 	now := time.Now()
-	defaultStatus := api.TaskStatusToDo
+	defaultStatus := api.ToDo
 
 	response := api.Task{
 		Id:          &taskID,
@@ -147,9 +147,13 @@ func (s *TaskTrackerServer) UpdateTask(w http.ResponseWriter, r *http.Request, t
 		return
 	}
 
-	var sqlcStatus db.TaskStatus
+	var sqlcStatus db.NullTaskStatus
+
 	if body.Status != nil {
-		sqlcStatus = db.TaskStatus(*body.Status)
+		sqlcStatus = db.NullTaskStatus{
+			TaskStatus: db.TaskStatus(*body.Status),
+			Valid:      true,
+		}
 	}
 
 	err := s.Queries.UpdateTask(r.Context(), db.UpdateTaskParams{
@@ -157,7 +161,7 @@ func (s *TaskTrackerServer) UpdateTask(w http.ResponseWriter, r *http.Request, t
 		Name:        pgtype.Text{String: *body.Name, Valid: true},
 		Description: pgtype.Text{String: *body.Description, Valid: true},
 		AssignedID:  body.AssignedId,
-		Status:      &sqlcStatus,
+		Status:      sqlcStatus,
 	})
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
