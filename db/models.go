@@ -8,6 +8,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -98,27 +99,27 @@ func (ns NullTaskStatus) Value() (driver.Value, error) {
 }
 
 type Board struct {
-	ID          pgtype.UUID
+	ID          uuid.UUID
 	Name        pgtype.Text
-	WorkspaceID pgtype.UUID
+	WorkspaceID *uuid.UUID
 	CreatedAt   pgtype.Timestamp
-	CreatedBy   pgtype.UUID
+	CreatedBy   *uuid.UUID
 }
 
 type Task struct {
-	ID          pgtype.UUID
-	BoardID     pgtype.UUID
-	CreatedBy   pgtype.UUID
+	ID          uuid.UUID
+	BoardID     *uuid.UUID
+	CreatedBy   *uuid.UUID
 	CreatedAt   pgtype.Timestamp
 	UpdatedAt   pgtype.Timestamp
-	AssignedID  pgtype.UUID
+	AssignedID  *uuid.UUID
 	Name        pgtype.Text
 	Description pgtype.Text
 	Status      NullTaskStatus
 }
 
 type User struct {
-	ID           pgtype.UUID
+	ID           uuid.UUID
 	Email        string
 	Username     string
 	PasswordHash string
@@ -126,14 +127,14 @@ type User struct {
 }
 
 type Workspace struct {
-	ID        pgtype.UUID
+	ID        uuid.UUID
 	Title     pgtype.Text
-	CreatedBy pgtype.UUID
+	CreatedBy *uuid.UUID
 	CreatedAt pgtype.Timestamp
 }
 
 type WorkspaceMember struct {
-	UserID      pgtype.UUID
-	WorkspaceID pgtype.UUID
+	UserID      *uuid.UUID
+	WorkspaceID *uuid.UUID
 	Role        NullMemberRole
 }

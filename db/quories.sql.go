@@ -8,58 +8,59 @@ package db
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createBoard = `-- name: createBoard :one
+const createBoard = `-- name: CreateBoard :one
 INSERT INTO boards (name, workspace_id, created_at, created_by)
 VALUES($1, $2, NOW(), $3)
 RETURNING id
 `
 
-type createBoardParams struct {
+type CreateBoardParams struct {
 	Name        pgtype.Text
-	WorkspaceID pgtype.UUID
-	CreatedBy   pgtype.UUID
+	WorkspaceID *uuid.UUID
+	CreatedBy   *uuid.UUID
 }
 
-func (q *Queries) createBoard(ctx context.Context, arg createBoardParams) (pgtype.UUID, error) {
+func (q *Queries) CreateBoard(ctx context.Context, arg CreateBoardParams) (uuid.UUID, error) {
 	row := q.db.QueryRow(ctx, createBoard, arg.Name, arg.WorkspaceID, arg.CreatedBy)
-	var id pgtype.UUID
+	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
 }
 
-const createTask = `-- name: createTask :one
+const createTask = `-- name: CreateTask :one
 INSERT INTO tasks (created_at, name, description, assigned_id)
 VALUES(NOW(), $1, $2, $3)
 RETURNING id
 `
 
-type createTaskParams struct {
+type CreateTaskParams struct {
 	Name        pgtype.Text
 	Description pgtype.Text
-	AssignedID  pgtype.UUID
+	AssignedID  *uuid.UUID
 }
 
-func (q *Queries) createTask(ctx context.Context, arg createTaskParams) (pgtype.UUID, error) {
+func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (uuid.UUID, error) {
 	row := q.db.QueryRow(ctx, createTask, arg.Name, arg.Description, arg.AssignedID)
-	var id pgtype.UUID
+	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
 }
 
-const deleteTask = `-- name: deleteTask :exec
+const deleteTask = `-- name: DeleteTask :exec
 DELETE FROM tasks
 WHERE id = $1
 `
 
-func (q *Queries) deleteTask(ctx context.Context, id pgtype.UUID) error {
+func (q *Queries) DeleteTask(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, deleteTask, id)
 	return err
 }
 
-const getBoardTasks = `-- name: getBoardTasks :many
+const getBoardTasks = `-- name: GetBoardTasks :many
 
 SELECT id
 FROM tasks 
@@ -68,15 +69,15 @@ ORDER BY created_at ASC
 `
 
 // CRUD functions query
-func (q *Queries) getBoardTasks(ctx context.Context, boardID pgtype.UUID) ([]pgtype.UUID, error) {
+func (q *Queries) GetBoardTasks(ctx context.Context, boardID *uuid.UUID) ([]uuid.UUID, error) {
 	rows, err := q.db.Query(ctx, getBoardTasks, boardID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []pgtype.UUID
+	var items []uuid.UUID
 	for rows.Next() {
-		var id pgtype.UUID
+		var id uuid.UUID
 		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
@@ -88,22 +89,22 @@ func (q *Queries) getBoardTasks(ctx context.Context, boardID pgtype.UUID) ([]pgt
 	return items, nil
 }
 
-const getWorkspaceBoards = `-- name: getWorkspaceBoards :many
+const getWorkspaceBoards = `-- name: GetWorkspaceBoards :many
 SELECT id
 FROM boards
 WHERE workspace_id = $1
 ORDER BY created_at ASC
 `
 
-func (q *Queries) getWorkspaceBoards(ctx context.Context, workspaceID pgtype.UUID) ([]pgtype.UUID, error) {
+func (q *Queries) GetWorkspaceBoards(ctx context.Context, workspaceID *uuid.UUID) ([]uuid.UUID, error) {
 	rows, err := q.db.Query(ctx, getWorkspaceBoards, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []pgtype.UUID
+	var items []uuid.UUID
 	for rows.Next() {
-		var id pgtype.UUID
+		var id uuid.UUID
 		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
@@ -115,21 +116,21 @@ func (q *Queries) getWorkspaceBoards(ctx context.Context, workspaceID pgtype.UUI
 	return items, nil
 }
 
-const updateTask = `-- name: updateTask :exec
+const updateTask = `-- name: UpdateTask :exec
 UPDATE tasks
 SET updated_at = NOW(), name = $2, description = $3, assigned_id = $4, status = $5
 WHERE id = $1
 `
 
-type updateTaskParams struct {
-	ID          pgtype.UUID
+type UpdateTaskParams struct {
+	ID          uuid.UUID
 	Name        pgtype.Text
 	Description pgtype.Text
-	AssignedID  pgtype.UUID
+	AssignedID  *uuid.UUID
 	Status      NullTaskStatus
 }
 
-func (q *Queries) updateTask(ctx context.Context, arg updateTaskParams) error {
+func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) error {
 	_, err := q.db.Exec(ctx, updateTask,
 		arg.ID,
 		arg.Name,
