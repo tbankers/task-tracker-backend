@@ -24,14 +24,9 @@ type TaskTrackerServer struct {
 	DBConn  *pgx.Conn
 }
 
-func (s *TaskTrackerServer) GetWorkspaceBoards(w http.ResponseWriter, r *http.Request, workspaceID string) {
-	wsUUID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		sendError(w, http.StatusBadRequest, "INVALID_UUID", "Неверный формат workspace_id")
-		return
-	}
+func (s *TaskTrackerServer) GetWorkspaceBoards(w http.ResponseWriter, r *http.Request, workspaceID uuid.UUID) {
 
-	boardIDs, err := s.Queries.GetWorkspaceBoards(r.Context(), &wsUUID)
+	boardIDs, err := s.Queries.GetWorkspaceBoards(r.Context(), &workspaceID)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
@@ -42,7 +37,7 @@ func (s *TaskTrackerServer) GetWorkspaceBoards(w http.ResponseWriter, r *http.Re
 		idCopy := id
 		response = append(response, api.Board{
 			Id:          &idCopy,
-			WorkspaceId: &wsUUID,
+			WorkspaceId: &workspaceID,
 		})
 	}
 
@@ -51,12 +46,7 @@ func (s *TaskTrackerServer) GetWorkspaceBoards(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(response)
 }
 
-func (s *TaskTrackerServer) CreateBoard(w http.ResponseWriter, r *http.Request, workspaceID string) {
-	wsUUID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		sendError(w, http.StatusBadRequest, "INVALID_UUID", "Неверный формат workspace_id")
-		return
-	}
+func (s *TaskTrackerServer) CreateBoard(w http.ResponseWriter, r *http.Request, workspaceID uuid.UUID) {
 
 	var body api.CreateBoardJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -65,10 +55,10 @@ func (s *TaskTrackerServer) CreateBoard(w http.ResponseWriter, r *http.Request, 
 	}
 
 	mockUserID := uuid.New()
-	
+
 	boardID, err := s.Queries.CreateBoard(r.Context(), db.CreateBoardParams{
 		Name:        pgtype.Text{String: body.Name, Valid: true},
-		WorkspaceID: &wsUUID,
+		WorkspaceID: &workspaceID,
 		CreatedBy:   &mockUserID,
 	})
 	if err != nil {
@@ -80,7 +70,7 @@ func (s *TaskTrackerServer) CreateBoard(w http.ResponseWriter, r *http.Request, 
 	response := api.Board{
 		Id:          &boardID,
 		Name:        &body.Name,
-		WorkspaceId: &wsUUID,
+		WorkspaceId: &workspaceID,
 		CreatedAt:   &now,
 		CreatedBy:   &mockUserID,
 	}
@@ -90,14 +80,9 @@ func (s *TaskTrackerServer) CreateBoard(w http.ResponseWriter, r *http.Request, 
 	json.NewEncoder(w).Encode(response)
 }
 
-func (s *TaskTrackerServer) GetBoardTasks(w http.ResponseWriter, r *http.Request, boardID string) {
-	bUUID, err := uuid.Parse(boardID)
-	if err != nil {
-		sendError(w, http.StatusBadRequest, "INVALID_UUID", "Неверный формат board_id")
-		return
-	}
+func (s *TaskTrackerServer) GetBoardTasks(w http.ResponseWriter, r *http.Request, boardID uuid.UUID) {
 
-	taskIDs, err := s.Queries.GetBoardTasks(r.Context(), &bUUID)
+	taskIDs, err := s.Queries.GetBoardTasks(r.Context(), &boardID)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
@@ -108,7 +93,7 @@ func (s *TaskTrackerServer) GetBoardTasks(w http.ResponseWriter, r *http.Request
 		idCopy := id
 		response = append(response, api.Task{
 			Id:      &idCopy,
-			BoardId: &bUUID,
+			BoardId: &boardID,
 		})
 	}
 
@@ -117,12 +102,7 @@ func (s *TaskTrackerServer) GetBoardTasks(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(response)
 }
 
-func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, boardID string) {
-	bUUID, err := uuid.Parse(boardID)
-	if err != nil {
-		sendError(w, http.StatusBadRequest, "INVALID_UUID", "Неверный формат board_id")
-		return
-	}
+func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, boardID uuid.UUID) {
 
 	var body api.CreateTaskJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -131,8 +111,8 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 	}
 
 	taskID, err := s.Queries.CreateTask(r.Context(), db.CreateTaskParams{
-		Name:        pgtype.Text{String: body.Name,Valid: true},
-		Description: pgtype.Text{String: *body.Description,Valid: true},
+		Name:        pgtype.Text{String: body.Name, Valid: true},
+		Description: pgtype.Text{String: *body.Description, Valid: true},
 		AssignedID:  body.AssignedId,
 	})
 	if err != nil {
@@ -145,7 +125,7 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 
 	response := api.Task{
 		Id:          &taskID,
-		BoardId:     &bUUID,
+		BoardId:     &boardID,
 		Name:        &body.Name,
 		Description: body.Description,
 		Status:      &defaultStatus,
@@ -159,12 +139,8 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 	json.NewEncoder(w).Encode(response)
 }
 
-func (s *TaskTrackerServer) UpdateTask(w http.ResponseWriter, r *http.Request, taskID string) {
-	tUUID, err := uuid.Parse(taskID)
-	if err != nil {
-		sendError(w, http.StatusBadRequest, "INVALID_UUID", "Неверный формат task_id")
-		return
-	}
+func (s *TaskTrackerServer) UpdateTask(w http.ResponseWriter, r *http.Request, taskID uuid.UUID) {
+	
 
 	var body api.UpdateTaskJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -177,10 +153,10 @@ func (s *TaskTrackerServer) UpdateTask(w http.ResponseWriter, r *http.Request, t
 		sqlcStatus = db.TaskStatus(*body.Status)
 	}
 
-	err = s.Queries.UpdateTask(r.Context(), db.UpdateTaskParams{
-		ID:          tUUID,
-		Name:        pgtype.Text{String: *body.Name,Valid: true},
-		Description: pgtype.Text{String: *body.Description,Valid: true},
+	err := s.Queries.UpdateTask(r.Context(), db.UpdateTaskParams{
+		ID:          taskID,
+		Name:        pgtype.Text{String: *body.Name, Valid: true},
+		Description: pgtype.Text{String: *body.Description, Valid: true},
 		AssignedID:  body.AssignedId,
 		Status:      &sqlcStatus,
 	})
@@ -192,14 +168,9 @@ func (s *TaskTrackerServer) UpdateTask(w http.ResponseWriter, r *http.Request, t
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *TaskTrackerServer) DeleteTask(w http.ResponseWriter, r *http.Request, taskID string) {
-	tUUID, err := uuid.Parse(taskID)
-	if err != nil {
-		sendError(w, http.StatusBadRequest, "INVALID_UUID", "Неверный формат task_id")
-		return
-	}
+func (s *TaskTrackerServer) DeleteTask(w http.ResponseWriter, r *http.Request, taskID uuid.UUID) {
 
-	err = s.Queries.DeleteTask(r.Context(), tUUID)
+	err := s.Queries.DeleteTask(r.Context(), taskID)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
