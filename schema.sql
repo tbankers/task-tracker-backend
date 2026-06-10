@@ -26,7 +26,7 @@ CREATE TABLE workspace_members (
 );
 --boards (which contain tasks)
 CREATE TABLE boards (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), 
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT, 
     workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE, 
     created_at TIMESTAMP, 
@@ -34,7 +34,7 @@ CREATE TABLE boards (
 );
 --tasks
 CREATE TABLE tasks (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), 
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     board_id UUID REFERENCES boards(id) ON DELETE CASCADE, 
     created_by UUID REFERENCES users(id) ON DELETE SET NULL, 
     created_at TIMESTAMP, 
