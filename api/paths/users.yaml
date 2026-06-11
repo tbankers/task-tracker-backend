@@ -25,7 +25,7 @@ post:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/User.yaml
+            $ref: ../components/schemas/UserResponse.yaml
     '400':
       $ref: ../components/responses/BadRequest.yaml
     '500':
@@ -48,9 +48,11 @@ get:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/User.yaml
+            $ref: ../components/schemas/UserResponse.yaml
     '400':
       $ref: ../components/responses/BadRequest.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
     '500':
       $ref: ../components/responses/InternalServerError.yaml
   tags:

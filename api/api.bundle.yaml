@@ -31,7 +31,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UserResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -54,9 +54,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UserResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /users/{user_id}:
@@ -81,12 +83,10 @@ paths:
       responses:
         '200':
           description: Changed the password successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
     get:
@@ -107,7 +107,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UserResponse'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -134,6 +134,8 @@ paths:
                 $ref: '#/components/schemas/Workspaces'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /workspaces:
@@ -148,13 +150,10 @@ paths:
           application/json:
             schema:
               type: object
-              required: [title, created_by]
+              required: [title]
               properties:
                 title:
                   type: string
-                created_by:
-                  type: string
-                  format: uuid
       responses:
         '201':
           description: Created workspace successfully
@@ -188,6 +187,8 @@ paths:
                 $ref: '#/components/schemas/Workspace'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
     patch:
@@ -217,9 +218,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkspaceEdited'
+                $ref: '#/components/schemas/Workspace'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
     delete:
@@ -239,6 +242,8 @@ paths:
           description: Deleted successfully
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /workspaces/{workspace_id}/workspace_members:
@@ -277,6 +282,8 @@ paths:
                 $ref: '#/components/schemas/Member'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /workspaces/{workspace_id}/workspace_members/{user_id}:
@@ -317,6 +324,8 @@ paths:
                 $ref: '#/components/schemas/Member'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
     delete:
@@ -342,6 +351,8 @@ paths:
           description: Deleted successfully
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /workspaces/{workspace_id}/workspace_members/{user_id}/role:
@@ -372,6 +383,8 @@ paths:
                 $ref: '#/components/schemas/MemberRole'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /workspaces/{workspace_id}/boards:
@@ -406,6 +419,8 @@ paths:
                 $ref: '#/components/schemas/Board'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
     get:
@@ -429,6 +444,8 @@ paths:
                 $ref: '#/components/schemas/Boards'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /boards/{board_id}:
@@ -462,6 +479,8 @@ paths:
                 $ref: '#/components/schemas/Board'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
     delete:
@@ -481,6 +500,8 @@ paths:
           description: Deleted board successfully
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /boards/{board_id}/tasks:
@@ -515,6 +536,33 @@ paths:
                 $ref: '#/components/schemas/Task'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      summary: get all tasks from a board
+      operationId: getTasksFromBoard
+      tags:
+        - tasks
+      parameters:
+        - name: board_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Got all board tasks successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tasks'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /tasks/{task_id}:
@@ -549,6 +597,8 @@ paths:
                 $ref: '#/components/schemas/Task'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
     delete:
@@ -568,11 +618,13 @@ paths:
           description: Deleted task successfully
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
   schemas:
-    User:
+    UserResponse:
       type: object
       properties:
         user_id:
@@ -583,10 +635,6 @@ components:
           format: email
         username:
           type: string
-        password:
-          type: string
-          format: password
-          description: "hashed users password"
         created_at:
           type: string
           format: date-time
@@ -598,20 +646,6 @@ components:
           type: string
           format: password
           description: "new raw or hashed user password"
-    UserGet:
-      type: object
-      properties:
-        user_id:
-          type: string
-          format: uuid
-        username:
-          type: string
-        email:
-          type: string
-          format: email
-        created_at:
-          type: string
-          format: date-time
     Workspaces:
       type: array
       items:
@@ -630,11 +664,6 @@ components:
         created_at:
           type: string
           format: date-time
-    WorkspaceEdited:
-      type: object
-      properties:
-        title:
-          type: string
     Member:
       type: object
       properties:
@@ -649,7 +678,7 @@ components:
     Board:
       type: object
       properties:
-        id:
+        board_id:
           type: string
           format: uuid
         title:
@@ -683,7 +712,7 @@ components:
     Task:
       type: object
       properties:
-        id:
+        task_id:
           type: string
           format: uuid
         board_id:
@@ -710,6 +739,10 @@ components:
         updated_at:
           type: string
           format: date-time
+    Tasks:
+      type: array
+      items:
+        $ref: '#/components/schemas/Task'
     ErrorResponse:
       type: object
       properties:

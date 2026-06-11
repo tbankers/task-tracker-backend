@@ -28,6 +28,8 @@ post:
             $ref: ../components/schemas/Board.yaml
     '400':
       $ref: ../components/responses/BadRequest.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
     '500':
       $ref: ../components/responses/InternalServerError.yaml
   tags:
@@ -51,6 +53,8 @@ get:
             $ref: ../components/schemas/Boards.yaml
     '400':
       $ref: ../components/responses/BadRequest.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
     '500':
       $ref: ../components/responses/InternalServerError.yaml
   tags:

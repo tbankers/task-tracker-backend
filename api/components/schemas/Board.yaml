@@ -1,6 +1,6 @@
 type: object
 properties:
-  id:
+  board_id:
     type: string
     format: uuid
   title:

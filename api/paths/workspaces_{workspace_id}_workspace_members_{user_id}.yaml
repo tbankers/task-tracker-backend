@@ -34,6 +34,8 @@ patch:
             $ref: ../components/schemas/Member.yaml
     '400':
       $ref: ../components/responses/BadRequest.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
     '500':
       $ref: ../components/responses/InternalServerError.yaml
   tags:
@@ -59,6 +61,8 @@ delete:
       description: Deleted successfully
     '400':
       $ref: ../components/responses/BadRequest.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
     '500':
       $ref: ../components/responses/InternalServerError.yaml
   tags:

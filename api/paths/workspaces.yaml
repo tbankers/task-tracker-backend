@@ -10,12 +10,8 @@ post:
           properties:
             title:
               type: string
-            created_by:
-              type: string
-              format: uuid
           required:
             - title
-            - created_by
   responses:
     '201':
       description: Created workspace successfully

@@ -1,5 +1,21 @@
 --CRUD functions query
 
+
+-- name: CreateUser :one
+INSERT INTO users (users_id, email, username, password_hash, created_at)
+VALUES(gen_random_uuid(), $1, $2, $3, NOW())
+RETURNING id;
+
+-- name: GetUserById :one
+SELECT id, email, username, password_hash, created_at
+FROM users
+WHERE user_id = $1;
+
+-- name: GetUserByEmail :one
+SELECT id, email, username, password_hash, created_at
+FROM users
+WHERE email = $1;
+
 -- name: GetBoardTasks :many
 SELECT id
 FROM tasks 

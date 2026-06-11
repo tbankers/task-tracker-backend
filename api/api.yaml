@@ -30,18 +30,14 @@ paths:
     $ref: paths/tasks_{task_id}.yaml
 components:
   schemas:
-    User:
-      $ref: components/schemas/User.yaml
+    UserResponse:
+      $ref: components/schemas/UserResponse.yaml
     NewPassword:
       $ref: components/schemas/NewPassword.yaml
-    UserGet:
-      $ref: components/schemas/UserGet.yaml
     Workspaces:
       $ref: components/schemas/Workspaces.yaml
     Workspace:
       $ref: components/schemas/Workspace.yaml
-    WorkspaceEdited:
-      $ref: components/schemas/WorkspaceEdited.yaml
     Member:
       $ref: components/schemas/Member.yaml
     Board:
@@ -54,6 +50,8 @@ components:
       $ref: components/schemas/MemberRole.yaml
     Task:
       $ref: components/schemas/Task.yaml
+    Tasks:
+      $ref: components/schemas/Tasks.yaml
     ErrorResponse:
       $ref: components/schemas/ErrorResponse.yaml
   responses:
