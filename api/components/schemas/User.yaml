@@ -1,17 +1,17 @@
 type: object
 properties:
-  id:
+  user_id:
     type: string
     format: uuid
-  title:
+  email:
     type: string
-  workspace_id:
+    format: email
+  username:
     type: string
-    format: uuid
+  password:
+    description: hashed users password
+    type: string
+    format: password
   created_at:
     type: string
     format: date-time
-  created_by:
-    type: string
-    format: uuid
-    nullable: true

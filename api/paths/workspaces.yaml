@@ -1,13 +1,6 @@
 post:
-  operationId: createTask
-  summary: create task
-  parameters:
-    - name: board_id
-      in: path
-      required: true
-      schema:
-        type: string
-        format: uuid
+  operationId: createWorkspace
+  summary: creates workspace
   requestBody:
     required: true
     content:
@@ -17,18 +10,22 @@ post:
           properties:
             title:
               type: string
+            created_by:
+              type: string
+              format: uuid
           required:
             - title
+            - created_by
   responses:
     '201':
-      description: Created task successfully
+      description: Created workspace successfully
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/Task.yaml
+            $ref: ../components/schemas/Workspace.yaml
     '400':
       $ref: ../components/responses/BadRequest.yaml
     '500':
       $ref: ../components/responses/InternalServerError.yaml
   tags:
-    - tasks
+    - workspaces

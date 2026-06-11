@@ -1,6 +1,6 @@
-patch:
-  operationId: changeTaskStatus
-  summary: change task status
+put:
+  operationId: updateTask
+  summary: Обновить задачу (статус, название, описание)
   parameters:
     - name: task_id
       in: path
@@ -15,26 +15,32 @@ patch:
         schema:
           type: object
           properties:
+            name:
+              type: string
+            description:
+              type: string
             status:
               $ref: ../components/schemas/TaskStatus.yaml
-          required:
-            - status
+            assigned_id:
+              type: string
+              format: uuid
+              nullable: true
   responses:
     '200':
-      description: Changed task status successfully
+      description: Задача успешно обновлена
       content:
         application/json:
           schema:
             $ref: ../components/schemas/Task.yaml
     '400':
       $ref: ../components/responses/BadRequest.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
     '500':
       $ref: ../components/responses/InternalServerError.yaml
-  tags:
-    - tasks
 delete:
   operationId: deleteTask
-  summary: delete task
+  summary: Удалить задачу
   parameters:
     - name: task_id
       in: path
@@ -44,10 +50,10 @@ delete:
         format: uuid
   responses:
     '204':
-      description: Deleted task successfully
+      description: Задача успешно удалена
     '400':
       $ref: ../components/responses/BadRequest.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
     '500':
       $ref: ../components/responses/InternalServerError.yaml
-  tags:
-    - tasks

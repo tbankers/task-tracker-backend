@@ -4,20 +4,56 @@ info:
   version: 1.0.0
   description: task-tracker API.
 paths:
+  /users:
+    $ref: paths/users.yaml
+  /users/{user_id}:
+    $ref: paths/users_{user_id}.yaml
+  /users/{user_id}/workspaces:
+    $ref: paths/users_{user_id}_workspaces.yaml
+  /workspaces:
+    $ref: paths/workspaces.yaml
+  /workspaces/{workspace_id}:
+    $ref: paths/workspaces_{workspace_id}.yaml
+  /workspaces/{workspace_id}/workspace_members:
+    $ref: paths/workspaces_{workspace_id}_workspace_members.yaml
+  /workspaces/{workspace_id}/workspace_members/{user_id}:
+    $ref: paths/workspaces_{workspace_id}_workspace_members_{user_id}.yaml
+  /workspaces/{workspace_id}/workspace_members/{user_id}/role:
+    $ref: paths/workspaces_{workspace_id}_workspace_members_{user_id}_role.yaml
   /workspaces/{workspace_id}/boards:
     $ref: paths/workspaces_{workspace_id}_boards.yaml
+  /boards/{board_id}:
+    $ref: paths/boards_{board_id}.yaml
   /boards/{board_id}/tasks:
     $ref: paths/boards_{board_id}_tasks.yaml
   /tasks/{task_id}:
     $ref: paths/tasks_{task_id}.yaml
 components:
   schemas:
+    User:
+      $ref: components/schemas/User.yaml
+    NewPassword:
+      $ref: components/schemas/NewPassword.yaml
+    UserGet:
+      $ref: components/schemas/UserGet.yaml
+    Workspaces:
+      $ref: components/schemas/Workspaces.yaml
+    Workspace:
+      $ref: components/schemas/Workspace.yaml
+    WorkspaceEdited:
+      $ref: components/schemas/WorkspaceEdited.yaml
+    Member:
+      $ref: components/schemas/Member.yaml
     Board:
       $ref: components/schemas/Board.yaml
-    Task:
-      $ref: components/schemas/Task.yaml
+    Boards:
+      $ref: components/schemas/Boards.yaml
     TaskStatus:
       $ref: components/schemas/TaskStatus.yaml
+    MemberRole:
+      $ref: components/schemas/MemberRole.yaml
+    Task:
+      $ref: components/schemas/Task.yaml
     ErrorResponse:
       $ref: components/schemas/ErrorResponse.yaml
   responses:

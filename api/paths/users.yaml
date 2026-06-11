@@ -1,13 +1,6 @@
 post:
-  operationId: createBoard
-  summary: create board
-  parameters:
-    - name: workspace_id
-      in: path
-      required: true
-      schema:
-        type: string
-        format: uuid
+  operationId: createUser
+  summary: creating user
   requestBody:
     required: true
     content:
@@ -15,43 +8,50 @@ post:
         schema:
           type: object
           properties:
-            title:
+            username:
+              type: string
+            email:
+              type: string
+              format: email
+            password:
               type: string
           required:
-            - title
+            - username
+            - email
+            - password
   responses:
     '201':
-      description: Created board successfully
+      description: Succesful user creation
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/Board.yaml
+            $ref: ../components/schemas/User.yaml
     '400':
       $ref: ../components/responses/BadRequest.yaml
     '500':
       $ref: ../components/responses/InternalServerError.yaml
   tags:
-    - boards
+    - users
 get:
-  operationId: getWorkspaceBoards
-  summary: get all boards from workspace
+  operationId: getUserByEmail
+  summary: get user by email
   parameters:
-    - name: workspace_id
-      in: path
+    - name: email
+      in: query
       required: true
       schema:
         type: string
-        format: uuid
+        format: email
   responses:
     '200':
-      description: Got all boards successfully
+      description: Got user successfully
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/Boards.yaml
+            $ref: ../components/schemas/User.yaml
     '400':
       $ref: ../components/responses/BadRequest.yaml
     '500':
       $ref: ../components/responses/InternalServerError.yaml
   tags:
-    - boards
+    - users

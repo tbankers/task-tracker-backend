@@ -4,10 +4,174 @@ info:
   version: 1.0.0
   description: task-tracker API.
 paths:
-  /workspaces/{workspace_id}/boards:
+  /users:
+    post:
+      summary: creating user
+      operationId: createUser
+      tags:
+        - users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '201':
+          description: Succesful user creation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     get:
-      operationId: getWorkspaceBoards
-      summary: Получить все доски воркспейса
+      summary: get user by email
+      operationId: getUserByEmail
+      tags:
+        - users
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Got user successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /users/{user_id}:
+    patch:
+      summary: changing users password
+      operationId: changePassword
+      tags:
+        - users
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPassword'
+      responses:
+        '200':
+          description: Changed the password successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      summary: Get user by ID
+      operationId: getUserById
+      tags:
+        - users
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Got user successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /users/{user_id}/workspaces:
+    get:
+      summary: get all users workspaces
+      operationId: getUserWorkspace
+      tags:
+        - workspaces
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Got all workspaces successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspaces'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /workspaces:
+    post:
+      summary: creates workspace
+      operationId: createWorkspace
+      tags:
+        - workspaces
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, created_by]
+              properties:
+                title:
+                  type: string
+                created_by:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Created workspace successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /workspaces/{workspace_id}:
+    get:
+      summary: get workspace by id
+      operationId: getUserWorkspaceById
+      tags:
+        - workspaces
       parameters:
         - name: workspace_id
           in: path
@@ -17,22 +181,20 @@ paths:
             format: uuid
       responses:
         '200':
-          description: success
+          description: Got workspace successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Board'
+                $ref: '#/components/schemas/Workspace'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    post:
-      operationId: createBoard
-      summary: Создать новую доску
+    patch:
+      summary: edit workspace
+      operationId: editWorkspace
+      tags:
+        - workspaces
       parameters:
         - name: workspace_id
           in: path
@@ -47,13 +209,197 @@ paths:
             schema:
               type: object
               properties:
-                name:
+                title:
                   type: string
+      responses:
+        '200':
+          description: Edited workspace successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceEdited'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      summary: delete workspace
+      operationId: deleteWorkspace
+      tags:
+        - workspaces
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /workspaces/{workspace_id}/workspace_members:
+    post:
+      summary: add member to workspace
+      operationId: addMember
+      tags:
+        - members
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
               required:
-                - name
+                - user_id
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                role:
+                  $ref: '#/components/schemas/MemberRole'
       responses:
         '201':
-          description: Доска успешно создана
+          description: Added member successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /workspaces/{workspace_id}/workspace_members/{user_id}:
+    patch:
+      summary: change member role
+      operationId: manageMember
+      tags:
+        - members
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  $ref: '#/components/schemas/MemberRole'
+      responses:
+        '200':
+          description: Changed role successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      summary: delete user from workspace
+      operationId: kickUser
+      tags:
+        - members
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /workspaces/{workspace_id}/workspace_members/{user_id}/role:
+    get:
+      summary: get member role by id
+      operationId: getMemberRoleById
+      tags:
+        - members
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Got member role successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberRole'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /workspaces/{workspace_id}/boards:
+    post:
+      summary: create board
+      operationId: createBoard
+      tags:
+        - boards
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+      responses:
+        '201':
+          description: Created board successfully
           content:
             application/json:
               schema:
@@ -62,12 +408,13 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /boards/{board_id}/tasks:
     get:
-      operationId: getBoardTasks
-      summary: Получить все задачи на доске
+      summary: get all boards from workspace
+      operationId: getWorkspaceBoards
+      tags:
+        - boards
       parameters:
-        - name: board_id
+        - name: workspace_id
           in: path
           required: true
           schema:
@@ -75,22 +422,21 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Список задач успешно получен
+          description: Got all boards successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Task'
+                $ref: '#/components/schemas/Boards'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    post:
-      operationId: createTask
-      summary: Создать новую задачу на доске
+  /boards/{board_id}:
+    patch:
+      summary: Edit board
+      operationId: editBoard
+      tags:
+        - boards
       parameters:
         - name: board_id
           in: path
@@ -105,19 +451,64 @@ paths:
             schema:
               type: object
               properties:
-                name:
+                title:
                   type: string
-                description:
+      responses:
+        '200':
+          description: Edited board successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Board'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      summary: delete board
+      operationId: deleteBoard
+      tags:
+        - boards
+      parameters:
+        - name: board_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204': 
+          description: Deleted board successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /boards/{board_id}/tasks:
+    post:
+      summary: create task
+      operationId: createTask
+      tags:
+        - tasks
+      parameters:
+        - name: board_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
                   type: string
-                assigned_id:
-                  type: string
-                  format: uuid
-                  nullable: true
-              required:
-                - name
       responses:
         '201':
-          description: Задача успешно создана
+          description: Created task successfully
           content:
             application/json:
               schema:
@@ -127,9 +518,11 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
   /tasks/{task_id}:
-    put:
-      operationId: updateTask
-      summary: Обновить задачу (статус, название, описание)
+    patch:
+      summary: change task status
+      operationId: changeTaskStatus
+      tags:
+        - tasks
       parameters:
         - name: task_id
           in: path
@@ -143,33 +536,26 @@ paths:
           application/json:
             schema:
               type: object
+              required: [status]
               properties:
-                name:
-                  type: string
-                description:
-                  type: string
                 status:
                   $ref: '#/components/schemas/TaskStatus'
-                assigned_id:
-                  type: string
-                  format: uuid
-                  nullable: true
       responses:
         '200':
-          description: Задача успешно обновлена
+          description: Changed task status successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Task'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
     delete:
+      summary: delete task
       operationId: deleteTask
-      summary: Удалить задачу
+      tags:
+        - tasks
       parameters:
         - name: task_id
           in: path
@@ -179,22 +565,94 @@ paths:
             format: uuid
       responses:
         '204':
-          description: Задача успешно удалена
+          description: Deleted task successfully
         '400':
           $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
   schemas:
+    User:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+          description: "hashed users password"
+        created_at:
+          type: string
+          format: date-time
+    NewPassword:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          format: password
+          description: "new raw or hashed user password"
+    UserGet:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        created_at:
+          type: string
+          format: date-time
+    Workspaces:
+      type: array
+      items:
+        $ref: '#/components/schemas/Workspace'
+    Workspace:
+      type: object
+      properties:
+        workspace_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+    WorkspaceEdited:
+      type: object
+      properties:
+        title:
+          type: string
+    Member:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/MemberRole'
     Board:
       type: object
       properties:
         id:
           type: string
           format: uuid
-        name:
+        title:
           type: string
         workspace_id:
           type: string
@@ -206,6 +664,22 @@ components:
           type: string
           format: uuid
           nullable: true
+    Boards:
+      type: array
+      items:
+        $ref: '#/components/schemas/Board'
+    TaskStatus:
+      type: string
+      enum:
+        - to_do
+        - in_progress
+        - done
+    MemberRole:
+      type: string
+      enum:
+        - guest
+        - member
+        - administrator
     Task:
       type: object
       properties:
@@ -215,7 +689,7 @@ components:
         board_id:
           type: string
           format: uuid
-        name:
+        title:
           type: string
         description:
           type: string
@@ -236,12 +710,6 @@ components:
         updated_at:
           type: string
           format: date-time
-    TaskStatus:
-      type: string
-      enum:
-        - to_do
-        - in_progress
-        - done
     ErrorResponse:
       type: object
       properties:

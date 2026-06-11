@@ -15,7 +15,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	api "github.com/tbankers/task-tracker-backend/api"
+	api "github.com/tbankers/task-tracker-backend"
 	db "github.com/tbankers/task-tracker-backend/db"
 )
 

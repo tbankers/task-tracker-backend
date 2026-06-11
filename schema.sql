@@ -5,7 +5,7 @@ CREATE TYPE member_role AS ENUM ('viewer', 'member', 'administrator');
 CREATE TYPE task_status AS ENUM ('to_do', 'in_progress', 'done');
 --users
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email TEXT NOT NULL UNIQUE,
     username TEXT NOT NULL,
     password_hash TEXT NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE users (
 );
 --workspaces (where boards are made)
 CREATE TABLE workspaces (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), 
+    workspace_id UUID PRIMARY KEY DEFAULT gen_random_uuid(), 
     title TEXT, 
     created_by UUID REFERENCES users(id) ON DELETE SET NULL, 
     created_at TIMESTAMP
@@ -26,21 +26,21 @@ CREATE TABLE workspace_members (
 );
 --boards (which contain tasks)
 CREATE TABLE boards (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT, 
+    board_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT, 
     workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE, 
     created_at TIMESTAMP, 
     created_by UUID REFERENCES users(id) ON DELETE SET NULL
 );
 --tasks
 CREATE TABLE tasks (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    task_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     board_id UUID REFERENCES boards(id) ON DELETE CASCADE, 
     created_by UUID REFERENCES users(id) ON DELETE SET NULL, 
     created_at TIMESTAMP, 
     updated_at TIMESTAMP, 
     assigned_id UUID REFERENCES users(id) ON DELETE SET NULL, 
-    name TEXT, 
+    title TEXT, 
     description TEXT, 
     status task_status DEFAULT 'to_do'
 );

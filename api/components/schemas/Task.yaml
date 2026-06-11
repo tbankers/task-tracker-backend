@@ -6,7 +6,7 @@ properties:
   board_id:
     type: string
     format: uuid
-  name:
+  title:
     type: string
   description:
     type: string

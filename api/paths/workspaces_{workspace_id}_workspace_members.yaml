@@ -1,8 +1,8 @@
 post:
-  operationId: createTask
-  summary: create task
+  operationId: addMember
+  summary: add member to workspace
   parameters:
-    - name: board_id
+    - name: workspace_id
       in: path
       required: true
       schema:
@@ -15,20 +15,23 @@ post:
         schema:
           type: object
           properties:
-            title:
+            user_id:
               type: string
+              format: uuid
+            role:
+              $ref: ../components/schemas/MemberRole.yaml
           required:
-            - title
+            - user_id
   responses:
     '201':
-      description: Created task successfully
+      description: Added member successfully
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/Task.yaml
+            $ref: ../components/schemas/Member.yaml
     '400':
       $ref: ../components/responses/BadRequest.yaml
     '500':
       $ref: ../components/responses/InternalServerError.yaml
   tags:
-    - tasks
+    - members

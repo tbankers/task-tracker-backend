@@ -1,0 +1,23 @@
+get:
+  operationId: getUserWorkspace
+  summary: get all users workspaces
+  parameters:
+    - name: user_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: Got all workspaces successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Workspaces.yaml
+    '400':
+      $ref: ../components/responses/BadRequest.yaml
+    '500':
+      $ref: ../components/responses/InternalServerError.yaml
+  tags:
+    - workspaces

@@ -1,8 +1,8 @@
-post:
-  operationId: createBoard
-  summary: create board
+patch:
+  operationId: editBoard
+  summary: Edit board
   parameters:
-    - name: workspace_id
+    - name: board_id
       in: path
       required: true
       schema:
@@ -17,11 +17,9 @@ post:
           properties:
             title:
               type: string
-          required:
-            - title
   responses:
-    '201':
-      description: Created board successfully
+    '200':
+      description: Edited board successfully
       content:
         application/json:
           schema:
@@ -32,23 +30,19 @@ post:
       $ref: ../components/responses/InternalServerError.yaml
   tags:
     - boards
-get:
-  operationId: getWorkspaceBoards
-  summary: get all boards from workspace
+delete:
+  operationId: deleteBoard
+  summary: delete board
   parameters:
-    - name: workspace_id
+    - name: board_id
       in: path
       required: true
       schema:
         type: string
         format: uuid
   responses:
-    '200':
-      description: Got all boards successfully
-      content:
-        application/json:
-          schema:
-            $ref: ../components/schemas/Boards.yaml
+    '204':
+      description: Deleted board successfully
     '400':
       $ref: ../components/responses/BadRequest.yaml
     '500':
