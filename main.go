@@ -862,7 +862,10 @@ func main() {
 		http.ServeFile(w, r, "app.html")
 	})
 
-	port := ":8080"
+	port := getEnv("APP_PORT", "8080")
+	if !strings.HasPrefix(port, ":") {
+		port = ":" + port
+	}
 	fmt.Printf("Task Tracker api запущен на http://localhost%s\n", port)
 	if err := http.ListenAndServe(port, r); err != nil {
 		panic(err)

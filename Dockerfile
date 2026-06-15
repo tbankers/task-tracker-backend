@@ -9,7 +9,9 @@ RUN cd tools && go tool oapi-codegen -config ../api/config.yaml ../api/api.yaml 
 RUN CGO_ENABLED=0 GOOS=linux go build -o main main.go
 
 FROM alpine:3.20
+RUN apk add --no-cache curl
 WORKDIR /app
 COPY --from=builder /app/main .
+RUN curl -fsSL https://raw.githubusercontent.com/tbankers/task-tracker-frontend/main/task-tracker.html -o app.html
 EXPOSE 8080
 CMD ["./main"]
