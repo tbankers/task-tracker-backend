@@ -51,6 +51,18 @@ CREATE TABLE tasks (
     status task_status DEFAULT 'to_do' 
 ); 
 
+--password reset tokens
+CREATE TABLE password_reset_tokens (
+    token_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_password_reset_tokens_token ON password_reset_tokens(token);
+CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
+
 CREATE INDEX board_of_task ON tasks(board_id); 
 CREATE INDEX assigned_user ON tasks(assigned_id); 
 CREATE INDEX ws_member ON workspace_members(user_id); 

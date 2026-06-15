@@ -36,7 +36,7 @@ UPDATE workspaces
 SET title = $1
 WHERE workspace_id = $2;
 
--- name: DeleteWorkspace :one
+-- name: DeleteWorkspace :exec
 DELETE FROM workspaces
 WHERE workspace_id = $1;
 
@@ -95,6 +95,11 @@ UPDATE tasks
 SET status = $1
 WHERE task_id = $2;
 
+-- name: UpdateTask :exec
+UPDATE tasks
+SET title = $2, description = $3, assigned_id = $4, status = $5, updated_at = NOW()
+WHERE task_id = $1;
+
 -- name: DeleteTask :exec
 DELETE FROM tasks
 WHERE task_id = $1;
@@ -104,3 +109,21 @@ SELECT task_id, board_id, created_at, created_by, updated_at, assigned_id, title
 FROM tasks 
 WHERE board_id = $1
 ORDER BY created_at ASC;
+
+-- name: CreatePasswordResetToken :one
+INSERT INTO password_reset_tokens (user_id, token, expires_at)
+VALUES ($1, $2, $3)
+RETURNING token_id;
+
+-- name: GetPasswordResetToken :one
+SELECT token_id, user_id, token, expires_at, created_at
+FROM password_reset_tokens
+WHERE token = $1;
+
+-- name: DeletePasswordResetToken :exec
+DELETE FROM password_reset_tokens
+WHERE token = $1;
+
+-- name: DeleteExpiredTokens :exec
+DELETE FROM password_reset_tokens
+WHERE expires_at < NOW();

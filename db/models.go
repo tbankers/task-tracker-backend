@@ -99,27 +99,35 @@ func (ns NullTaskStatus) Value() (driver.Value, error) {
 }
 
 type Board struct {
-	ID          uuid.UUID
-	Name        pgtype.Text
+	BoardID     uuid.UUID
+	Title       pgtype.Text
 	WorkspaceID *uuid.UUID
 	CreatedAt   pgtype.Timestamp
 	CreatedBy   *uuid.UUID
 }
 
+type PasswordResetToken struct {
+	TokenID   uuid.UUID
+	UserID    uuid.UUID
+	Token     string
+	ExpiresAt pgtype.Timestamp
+	CreatedAt pgtype.Timestamp
+}
+
 type Task struct {
-	ID          uuid.UUID
+	TaskID      int32
 	BoardID     *uuid.UUID
 	CreatedBy   *uuid.UUID
 	CreatedAt   pgtype.Timestamp
 	UpdatedAt   pgtype.Timestamp
 	AssignedID  *uuid.UUID
-	Name        pgtype.Text
+	Title       pgtype.Text
 	Description pgtype.Text
 	Status      NullTaskStatus
 }
 
 type User struct {
-	ID           uuid.UUID
+	UserID       uuid.UUID
 	Email        string
 	Username     string
 	PasswordHash string
@@ -127,14 +135,14 @@ type User struct {
 }
 
 type Workspace struct {
-	ID        uuid.UUID
-	Title     pgtype.Text
-	CreatedBy *uuid.UUID
-	CreatedAt pgtype.Timestamp
+	WorkspaceID uuid.UUID
+	Title       pgtype.Text
+	CreatedBy   *uuid.UUID
+	CreatedAt   pgtype.Timestamp
 }
 
 type WorkspaceMember struct {
-	UserID      *uuid.UUID
-	WorkspaceID *uuid.UUID
+	UserID      uuid.UUID
+	WorkspaceID uuid.UUID
 	Role        NullMemberRole
 }

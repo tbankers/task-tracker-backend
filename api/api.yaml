@@ -4,6 +4,14 @@ info:
   version: 1.0.0
   description: task-tracker API.
 paths:
+  /auth/register:
+    $ref: paths/auth_register.yaml
+  /auth/login:
+    $ref: paths/auth_login.yaml
+  /auth/forgot-password:
+    $ref: paths/auth_forgot_password.yaml
+  /auth/reset-password:
+    $ref: paths/auth_reset_password.yaml
   /users:
     $ref: paths/users.yaml
   /users/{user_id}:
@@ -54,6 +62,16 @@ components:
       $ref: components/schemas/Tasks.yaml
     ErrorResponse:
       $ref: components/schemas/ErrorResponse.yaml
+    RegisterRequest:
+      $ref: components/schemas/RegisterRequest.yaml
+    LoginRequest:
+      $ref: components/schemas/LoginRequest.yaml
+    LoginResponse:
+      $ref: components/schemas/LoginResponse.yaml
+    ForgotPasswordRequest:
+      $ref: components/schemas/ForgotPasswordRequest.yaml
+    ResetPasswordRequest:
+      $ref: components/schemas/ResetPasswordRequest.yaml
   responses:
     BadRequest:
       $ref: components/responses/BadRequest.yaml
