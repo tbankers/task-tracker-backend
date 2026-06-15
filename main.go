@@ -851,6 +851,10 @@ func main() {
 		http.ServeFile(w, r, "frontend.html")
 	})
 
+	r.Get("/app", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "app.html")
+	})
+
 	port := ":8080"
 	fmt.Printf("Task Tracker api запущен на http://localhost%s\n", port)
 	if err := http.ListenAndServe(port, r); err != nil {

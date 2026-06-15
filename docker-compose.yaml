@@ -35,6 +35,7 @@ services:
       - SMTP_FROM=${SMTP_FROM:-${SMTP_USERNAME}}
     volumes:
       - ./frontend.html:/app/frontend.html
+      - ../task-tracker-frontend/task-tracker.html:/app/app.html
     networks:
       - app_network
     depends_on:
