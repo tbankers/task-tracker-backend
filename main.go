@@ -413,8 +413,8 @@ func (s *TaskTrackerServer) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonWrite(w, http.StatusCreated, map[string]interface{}{
-		"user_id": userID.String(),
-		"email":   string(body.Email),
+		"user_id":  userID.String(),
+		"email":    string(body.Email),
 		"username": body.Username,
 	})
 }
