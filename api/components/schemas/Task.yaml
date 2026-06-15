@@ -1,0 +1,29 @@
+type: object
+properties:
+  task_id:
+    type: string
+    format: uuid
+  board_id:
+    type: string
+    format: uuid
+  title:
+    type: string
+  description:
+    type: string
+    nullable: true
+  status:
+    $ref: TaskStatus.yaml
+  assigned_id:
+    type: string
+    format: uuid
+    nullable: true
+  created_by:
+    type: string
+    format: uuid
+    nullable: true
+  created_at:
+    type: string
+    format: date-time
+  updated_at:
+    type: string
+    format: date-time

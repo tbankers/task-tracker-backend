@@ -1,0 +1,17 @@
+type: object
+properties:
+  board_id:
+    type: string
+    format: uuid
+  title:
+    type: string
+  workspace_id:
+    type: string
+    format: uuid
+  created_at:
+    type: string
+    format: date-time
+  created_by:
+    type: string
+    format: uuid
+    nullable: true

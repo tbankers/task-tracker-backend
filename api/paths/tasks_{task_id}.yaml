@@ -1,0 +1,55 @@
+patch:
+  operationId: changeTaskStatus
+  summary: change task status
+  parameters:
+    - name: task_id
+      in: path
+      required: true
+      schema:
+        type: integer
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            status:
+              $ref: ../components/schemas/TaskStatus.yaml
+          required:
+            - status
+  responses:
+    '200':
+      description: Changed task status successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Task.yaml
+    '400':
+      $ref: ../components/responses/BadRequest.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    '500':
+      $ref: ../components/responses/InternalServerError.yaml
+  tags:
+    - tasks
+delete:
+  operationId: deleteTask
+  summary: delete task
+  parameters:
+    - name: task_id
+      in: path
+      required: true
+      schema:
+        type: integer
+  responses:
+    '204':
+      description: Deleted task successfully
+    '400':
+      $ref: ../components/responses/BadRequest.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    '500':
+      $ref: ../components/responses/InternalServerError.yaml
+  tags:
+    - tasks

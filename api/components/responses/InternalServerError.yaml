@@ -1,0 +1,5 @@
+description: Внутренняя ошибка сервера при работе с БД
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/ErrorResponse.yaml

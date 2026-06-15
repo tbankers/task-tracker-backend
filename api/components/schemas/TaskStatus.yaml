@@ -1,0 +1,5 @@
+type: string
+enum:
+  - to_do
+  - in_progress
+  - done

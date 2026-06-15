@@ -1,0 +1,55 @@
+patch:
+  operationId: editBoard
+  summary: Edit board
+  parameters:
+    - name: board_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            title:
+              type: string
+  responses:
+    '200':
+      description: Edited board successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Board.yaml
+    '400':
+      $ref: ../components/responses/BadRequest.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    '500':
+      $ref: ../components/responses/InternalServerError.yaml
+  tags:
+    - boards
+delete:
+  operationId: deleteBoard
+  summary: delete board
+  parameters:
+    - name: board_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '204':
+      description: Deleted board successfully
+    '400':
+      $ref: ../components/responses/BadRequest.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    '500':
+      $ref: ../components/responses/InternalServerError.yaml
+  tags:
+    - boards

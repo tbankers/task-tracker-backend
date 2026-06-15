@@ -1,0 +1,27 @@
+post:
+  operationId: createWorkspace
+  summary: creates workspace
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            title:
+              type: string
+          required:
+            - title
+  responses:
+    '201':
+      description: Created workspace successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Workspace.yaml
+    '400':
+      $ref: ../components/responses/BadRequest.yaml
+    '500':
+      $ref: ../components/responses/InternalServerError.yaml
+  tags:
+    - workspaces

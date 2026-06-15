@@ -1,0 +1,39 @@
+post:
+  operationId: addMember
+  summary: add member to workspace
+  parameters:
+    - name: workspace_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            user_id:
+              type: string
+              format: uuid
+            role:
+              $ref: ../components/schemas/MemberRole.yaml
+          required:
+            - user_id
+  responses:
+    '201':
+      description: Added member successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Member.yaml
+    '400':
+      $ref: ../components/responses/BadRequest.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    '500':
+      $ref: ../components/responses/InternalServerError.yaml
+  tags:
+    - members
