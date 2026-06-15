@@ -38,6 +38,13 @@ type smtpConfig struct {
 
 var smtpCfg smtpConfig
 
+type contextKey string
+
+const (
+	contextKeyUserID contextKey = "user_id"
+	contextKeyEmail  contextKey = "email"
+)
+
 func init() {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
@@ -46,7 +53,7 @@ func init() {
 	jwtSecret = []byte(secret)
 
 	port := 587
-	fmt.Sscanf(os.Getenv("SMTP_PORT"), "%d", &port)
+	_, _ = fmt.Sscanf(os.Getenv("SMTP_PORT"), "%d", &port)
 	smtpCfg = smtpConfig{
 		Host:     getEnv("SMTP_HOST", "smtp.gmail.com"),
 		Port:     port,
@@ -82,19 +89,19 @@ func sendEmail(to, subject, body string) error {
 	}
 	msg += "\r\n" + body
 
-	addr := fmt.Sprintf("%s:%d", smtpCfg.Host, smtpCfg.Port)
+	addr := net.JoinHostPort(smtpCfg.Host, fmt.Sprintf("%d", smtpCfg.Port))
 
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return fmt.Errorf("net dial: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client, err := smtp.NewClient(conn, smtpCfg.Host)
 	if err != nil {
 		return fmt.Errorf("smtp client: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	if err = client.StartTLS(&tls.Config{ServerName: smtpCfg.Host}); err != nil {
 		return fmt.Errorf("starttls: %w", err)
@@ -203,14 +210,14 @@ func authMiddleware(next http.Handler) http.Handler {
 			sendError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid or expired token")
 			return
 		}
-		ctx := context.WithValue(r.Context(), "user_id", claims.UserID)
-		ctx = context.WithValue(ctx, "email", claims.Email)
+		ctx := context.WithValue(r.Context(), contextKeyUserID, claims.UserID)
+		ctx = context.WithValue(ctx, contextKeyEmail, claims.Email)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func getUserID(r *http.Request) string {
-	if v := r.Context().Value("user_id"); v != nil {
+	if v := r.Context().Value(contextKeyUserID); v != nil {
 		return v.(string)
 	}
 	return ""
@@ -227,7 +234,7 @@ func generateResetToken() (string, error) {
 func sendError(w http.ResponseWriter, statusCode int, code string, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(map[string]string{
+	_ = json.NewEncoder(w).Encode(map[string]string{
 		"code":    code,
 		"message": msg,
 	})
@@ -236,7 +243,7 @@ func sendError(w http.ResponseWriter, statusCode int, code string, msg string) {
 func jsonWrite(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
+	_ = json.NewEncoder(w).Encode(v)
 }
 
 // --- Auth handlers ---
@@ -375,7 +382,7 @@ func (s *TaskTrackerServer) ResetPassword(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if time.Now().After(resetToken.ExpiresAt.Time) {
-		s.Queries.DeletePasswordResetToken(r.Context(), body.Token)
+		_ = s.Queries.DeletePasswordResetToken(r.Context(), body.Token)
 		sendError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Токен просрочен")
 		return
 	}
@@ -392,7 +399,7 @@ func (s *TaskTrackerServer) ResetPassword(w http.ResponseWriter, r *http.Request
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
 	}
-	s.Queries.DeletePasswordResetToken(r.Context(), body.Token)
+	_ = s.Queries.DeletePasswordResetToken(r.Context(), body.Token)
 	jsonWrite(w, http.StatusOK, map[string]string{
 		"message": "Пароль успешно изменён",
 	})
@@ -829,7 +836,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Не удалось подключиться к БД: %v", err))
 	}
-	defer conn.Close(ctx)
+	defer func() { _ = conn.Close(ctx) }()
 
 	queries := db.New(conn)
 
