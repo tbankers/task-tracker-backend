@@ -28,6 +28,8 @@ services:
       - DB_PASSWORD=password
       - DB_NAME=tasktracker
       - DATABASE_URL=postgres://user:password@db:5432/tasktracker?sslmode=disable
+    volumes:
+      - ./frontend.html:/app/frontend.html
     networks:
       - app_network
     depends_on:

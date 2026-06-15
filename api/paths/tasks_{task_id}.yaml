@@ -6,8 +6,7 @@ patch:
       in: path
       required: true
       schema:
-        type: string
-        format: uuid
+        type: integer
   requestBody:
     required: true
     content:
@@ -42,8 +41,7 @@ delete:
       in: path
       required: true
       schema:
-        type: string
-        format: uuid
+        type: integer
   responses:
     '204':
       description: Deleted task successfully

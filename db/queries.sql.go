@@ -402,25 +402,31 @@ func (q *Queries) GetUsersWorkspace(ctx context.Context, createdBy *uuid.UUID) (
 }
 
 const getWorkspaceBoards = `-- name: GetWorkspaceBoards :many
-SELECT board_id
+SELECT board_id, title, workspace_id, created_at, created_by
 FROM boards
 WHERE workspace_id = $1
 ORDER BY created_at ASC
 `
 
-func (q *Queries) GetWorkspaceBoards(ctx context.Context, workspaceID *uuid.UUID) ([]uuid.UUID, error) {
+func (q *Queries) GetWorkspaceBoards(ctx context.Context, workspaceID *uuid.UUID) ([]Board, error) {
 	rows, err := q.db.Query(ctx, getWorkspaceBoards, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []uuid.UUID
+	var items []Board
 	for rows.Next() {
-		var board_id uuid.UUID
-		if err := rows.Scan(&board_id); err != nil {
+		var i Board
+		if err := rows.Scan(
+			&i.BoardID,
+			&i.Title,
+			&i.WorkspaceID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+		); err != nil {
 			return nil, err
 		}
-		items = append(items, board_id)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/tls"
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -160,8 +159,32 @@ func validateToken(tokenString string) (*Claims, error) {
 	return nil, fmt.Errorf("invalid token")
 }
 
+func requestLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		wrapped := &statusResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		next.ServeHTTP(wrapped, r)
+		duration := time.Since(start)
+		fmt.Printf("[API] %s %s → %d (%s)\n", r.Method, r.URL.Path, wrapped.statusCode, duration)
+	})
+}
+
+type statusResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (w *statusResponseWriter) WriteHeader(code int) {
+	w.statusCode = code
+	w.ResponseWriter.WriteHeader(code)
+}
+
 func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/auth/") || strings.HasPrefix(r.URL.Path, "/frontend") {
+			next.ServeHTTP(w, r)
+			return
+		}
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			sendError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authorization header required")
@@ -205,10 +228,6 @@ func sendError(w http.ResponseWriter, statusCode int, code string, msg string) {
 		"code":    code,
 		"message": msg,
 	})
-}
-
-func uuidToInt32(id uuid.UUID) int32 {
-	return int32(binary.BigEndian.Uint32(id[:4]))
 }
 
 func jsonWrite(w http.ResponseWriter, status int, v interface{}) {
@@ -547,17 +566,27 @@ func (s *TaskTrackerServer) DeleteWorkspace(w http.ResponseWriter, r *http.Reque
 // --- Board handlers ---
 
 func (s *TaskTrackerServer) GetWorkspaceBoards(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID) {
-	boardIDs, err := s.Queries.GetWorkspaceBoards(r.Context(), &workspaceId)
+	boards, err := s.Queries.GetWorkspaceBoards(r.Context(), &workspaceId)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
 	}
 	var response []map[string]interface{}
-	for _, id := range boardIDs {
-		response = append(response, map[string]interface{}{
-			"id":           id.String(),
+	for _, b := range boards {
+		board := map[string]interface{}{
+			"id":           b.BoardID.String(),
 			"workspace_id": workspaceId.String(),
-		})
+		}
+		if b.Title.Valid {
+			board["title"] = b.Title.String
+		}
+		if b.CreatedAt.Valid {
+			board["created_at"] = b.CreatedAt.Time
+		}
+		if b.CreatedBy != nil {
+			board["created_by"] = b.CreatedBy.String()
+		}
+		response = append(response, board)
 	}
 	jsonWrite(w, http.StatusOK, response)
 }
@@ -692,7 +721,7 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 	})
 }
 
-func (s *TaskTrackerServer) ChangeTaskStatus(w http.ResponseWriter, r *http.Request, taskId uuid.UUID) {
+func (s *TaskTrackerServer) ChangeTaskStatus(w http.ResponseWriter, r *http.Request, taskId int) {
 	var body api.ChangeTaskStatusJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
@@ -703,7 +732,7 @@ func (s *TaskTrackerServer) ChangeTaskStatus(w http.ResponseWriter, r *http.Requ
 			TaskStatus: db.TaskStatus(body.Status),
 			Valid:      true,
 		},
-		TaskID: uuidToInt32(taskId),
+		TaskID: int32(taskId),
 	})
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
@@ -712,8 +741,8 @@ func (s *TaskTrackerServer) ChangeTaskStatus(w http.ResponseWriter, r *http.Requ
 	jsonWrite(w, http.StatusOK, map[string]string{"message": "Статус задачи обновлён"})
 }
 
-func (s *TaskTrackerServer) DeleteTask(w http.ResponseWriter, r *http.Request, taskId uuid.UUID) {
-	err := s.Queries.DeleteTask(r.Context(), uuidToInt32(taskId))
+func (s *TaskTrackerServer) DeleteTask(w http.ResponseWriter, r *http.Request, taskId int) {
+	err := s.Queries.DeleteTask(r.Context(), int32(taskId))
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
@@ -806,7 +835,7 @@ func main() {
 	}
 
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	r.Use(requestLogger)
 	r.Use(middleware.Recoverer)
 
 	r.Group(func(r chi.Router) {
@@ -814,7 +843,11 @@ func main() {
 		api.HandlerFromMux(serverImpl, r)
 	})
 
-	port := ":5000"
+	r.Get("/frontend", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "frontend.html")
+	})
+
+	port := ":8080"
 	fmt.Printf("Task Tracker api запущен на http://localhost%s\n", port)
 	if err := http.ListenAndServe(port, r); err != nil {
 		panic(err)

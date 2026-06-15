@@ -71,7 +71,7 @@ VALUES($1, $2, NOW(), $3)
 RETURNING board_id;
 
 -- name: GetWorkspaceBoards :many
-SELECT board_id
+SELECT board_id, title, workspace_id, created_at, created_by
 FROM boards
 WHERE workspace_id = $1
 ORDER BY created_at ASC;
