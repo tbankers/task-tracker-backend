@@ -4,19 +4,132 @@ info:
   version: 1.0.0
   description: task-tracker API.
 paths:
+  /auth/register:
+    post:
+      operationId: register
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - auth
+  /auth/login:
+    post:
+      operationId: login
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - auth
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - auth
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      summary: Reset password with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - auth
   /users:
     post:
-      summary: creating user
       operationId: createUser
-      tags:
-        - users
+      summary: creating user
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [username, email, password]
               properties:
                 username:
                   type: string
@@ -25,6 +138,10 @@ paths:
                   format: email
                 password:
                   type: string
+              required:
+                - username
+                - email
+                - password
       responses:
         '201':
           description: Succesful user creation
@@ -36,11 +153,11 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    get:
-      summary: get user by email
-      operationId: getUserByEmail
       tags:
         - users
+    get:
+      operationId: getUserByEmail
+      summary: get user by email
       parameters:
         - name: email
           in: query
@@ -61,12 +178,12 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /users/{user_id}:
-    patch:
-      summary: changing users password
-      operationId: changePassword
       tags:
         - users
+  /users/{user_id}:
+    patch:
+      operationId: changePassword
+      summary: changing users password
       parameters:
         - name: user_id
           in: path
@@ -89,11 +206,11 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    get:
-      summary: Get user by ID
-      operationId: getUserById
       tags:
         - users
+    get:
+      operationId: getUserById
+      summary: Get user by ID
       parameters:
         - name: user_id
           in: path
@@ -112,12 +229,12 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      tags:
+        - users
   /users/{user_id}/workspaces:
     get:
-      summary: get all users workspaces
       operationId: getUserWorkspace
-      tags:
-        - workspaces
+      summary: get all users workspaces
       parameters:
         - name: user_id
           in: path
@@ -138,22 +255,23 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /workspaces:
-    post:
-      summary: creates workspace
-      operationId: createWorkspace
       tags:
         - workspaces
+  /workspaces:
+    post:
+      operationId: createWorkspace
+      summary: creates workspace
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [title]
               properties:
                 title:
                   type: string
+              required:
+                - title
       responses:
         '201':
           description: Created workspace successfully
@@ -165,12 +283,12 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /workspaces/{workspace_id}:
-    get:
-      summary: get workspace by id
-      operationId: getUserWorkspaceById
       tags:
         - workspaces
+  /workspaces/{workspace_id}:
+    get:
+      operationId: getUserWorkspaceById
+      summary: get workspace by id
       parameters:
         - name: workspace_id
           in: path
@@ -191,11 +309,11 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    patch:
-      summary: edit workspace
-      operationId: editWorkspace
       tags:
         - workspaces
+    patch:
+      operationId: editWorkspace
+      summary: edit workspace
       parameters:
         - name: workspace_id
           in: path
@@ -225,11 +343,11 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    delete:
-      summary: delete workspace
-      operationId: deleteWorkspace
       tags:
         - workspaces
+    delete:
+      operationId: deleteWorkspace
+      summary: delete workspace
       parameters:
         - name: workspace_id
           in: path
@@ -246,12 +364,12 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      tags:
+        - workspaces
   /workspaces/{workspace_id}/workspace_members:
     post:
-      summary: add member to workspace
       operationId: addMember
-      tags:
-        - members
+      summary: add member to workspace
       parameters:
         - name: workspace_id
           in: path
@@ -265,14 +383,14 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - user_id
               properties:
                 user_id:
                   type: string
                   format: uuid
                 role:
                   $ref: '#/components/schemas/MemberRole'
+              required:
+                - user_id
       responses:
         '201':
           description: Added member successfully
@@ -286,12 +404,12 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /workspaces/{workspace_id}/workspace_members/{user_id}:
-    patch:
-      summary: change member role
-      operationId: manageMember
       tags:
         - members
+  /workspaces/{workspace_id}/workspace_members/{user_id}:
+    patch:
+      operationId: manageMember
+      summary: change member role
       parameters:
         - name: workspace_id
           in: path
@@ -311,10 +429,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [role]
               properties:
                 role:
                   $ref: '#/components/schemas/MemberRole'
+              required:
+                - role
       responses:
         '200':
           description: Changed role successfully
@@ -328,11 +447,11 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    delete:
-      summary: delete user from workspace
-      operationId: kickUser
       tags:
         - members
+    delete:
+      operationId: kickUser
+      summary: delete user from workspace
       parameters:
         - name: workspace_id
           in: path
@@ -355,12 +474,12 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /workspaces/{workspace_id}/workspace_members/{user_id}/role:
-    get:
-      summary: get member role by id
-      operationId: getMemberRoleById
       tags:
         - members
+  /workspaces/{workspace_id}/workspace_members/{user_id}/role:
+    get:
+      operationId: getMemberRoleById
+      summary: get member role by id
       parameters:
         - name: workspace_id
           in: path
@@ -387,12 +506,12 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      tags:
+        - members
   /workspaces/{workspace_id}/boards:
     post:
-      summary: create board
       operationId: createBoard
-      tags:
-        - boards
+      summary: create board
       parameters:
         - name: workspace_id
           in: path
@@ -406,10 +525,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [title]
               properties:
                 title:
                   type: string
+              required:
+                - title
       responses:
         '201':
           description: Created board successfully
@@ -423,11 +543,11 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    get:
-      summary: get all boards from workspace
-      operationId: getWorkspaceBoards
       tags:
         - boards
+    get:
+      operationId: getWorkspaceBoards
+      summary: get all boards from workspace
       parameters:
         - name: workspace_id
           in: path
@@ -448,12 +568,12 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /boards/{board_id}:
-    patch:
-      summary: Edit board
-      operationId: editBoard
       tags:
         - boards
+  /boards/{board_id}:
+    patch:
+      operationId: editBoard
+      summary: Edit board
       parameters:
         - name: board_id
           in: path
@@ -483,11 +603,11 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    delete:
-      summary: delete board
-      operationId: deleteBoard
       tags:
         - boards
+    delete:
+      operationId: deleteBoard
+      summary: delete board
       parameters:
         - name: board_id
           in: path
@@ -496,7 +616,7 @@ paths:
             type: string
             format: uuid
       responses:
-        '204': 
+        '204':
           description: Deleted board successfully
         '400':
           $ref: '#/components/responses/BadRequest'
@@ -504,12 +624,12 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      tags:
+        - boards
   /boards/{board_id}/tasks:
     post:
-      summary: create task
       operationId: createTask
-      tags:
-        - tasks
+      summary: create task
       parameters:
         - name: board_id
           in: path
@@ -523,10 +643,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [title]
               properties:
                 title:
                   type: string
+              required:
+                - title
       responses:
         '201':
           description: Created task successfully
@@ -540,11 +661,11 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    get:
-      summary: get all tasks from a board
-      operationId: getTasksFromBoard
       tags:
         - tasks
+    get:
+      operationId: getTasksFromBoard
+      summary: get all tasks from a board
       parameters:
         - name: board_id
           in: path
@@ -565,29 +686,29 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /tasks/{task_id}:
-    patch:
-      summary: change task status
-      operationId: changeTaskStatus
       tags:
         - tasks
+  /tasks/{task_id}:
+    patch:
+      operationId: changeTaskStatus
+      summary: change task status
       parameters:
         - name: task_id
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [status]
               properties:
                 status:
                   $ref: '#/components/schemas/TaskStatus'
+              required:
+                - status
       responses:
         '200':
           description: Changed task status successfully
@@ -601,18 +722,17 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    delete:
-      summary: delete task
-      operationId: deleteTask
       tags:
         - tasks
+    delete:
+      operationId: deleteTask
+      summary: delete task
       parameters:
         - name: task_id
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
       responses:
         '204':
           description: Deleted task successfully
@@ -622,8 +742,25 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      tags:
+        - tasks
 components:
   schemas:
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        password:
+          type: string
+          minLength: 6
+      required:
+        - email
+        - username
+        - password
     UserResponse:
       type: object
       properties:
@@ -638,18 +775,67 @@ components:
         created_at:
           type: string
           format: date-time
-    NewPassword:
+    LoginResponse:
       type: object
-      required: [password]
       properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserResponse'
+      required:
+        - token
+        - user
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: INVALID_UUID
+        message:
+          type: string
+          example: The provided string is not a valid UUID
+      required:
+        - code
+        - message
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
         password:
           type: string
+      required:
+        - email
+        - password
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+        - email
+    ResetPasswordRequest:
+      type: object
+      properties:
+        token:
+          type: string
+        new_password:
+          type: string
+          minLength: 6
+      required:
+        - token
+        - new_password
+    NewPassword:
+      type: object
+      properties:
+        password:
+          description: new raw or hashed user password
+          type: string
           format: password
-          description: "new raw or hashed user password"
-    Workspaces:
-      type: array
-      items:
-        $ref: '#/components/schemas/Workspace'
+      required:
+        - password
     Workspace:
       type: object
       properties:
@@ -664,6 +850,16 @@ components:
         created_at:
           type: string
           format: date-time
+    Workspaces:
+      type: array
+      items:
+        $ref: '#/components/schemas/Workspace'
+    MemberRole:
+      type: string
+      enum:
+        - guest
+        - member
+        - administrator
     Member:
       type: object
       properties:
@@ -703,12 +899,6 @@ components:
         - to_do
         - in_progress
         - done
-    MemberRole:
-      type: string
-      enum:
-        - guest
-        - member
-        - administrator
     Task:
       type: object
       properties:
@@ -743,18 +933,6 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Task'
-    ErrorResponse:
-      type: object
-      properties:
-        code:
-          type: string
-          example: INVALID_UUID
-        message:
-          type: string
-          example: The provided string is not a valid UUID
-      required:
-        - code
-        - message
   responses:
     BadRequest:
       description: Невалидные входные данные или неверный формат UUID
@@ -762,14 +940,14 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-    NotFound:
-      description: Ресурс не найден в базе данных
+    InternalServerError:
+      description: Внутренняя ошибка сервера при работе с БД
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-    InternalServerError:
-      description: Внутренняя ошибка сервера при работе с БД
+    NotFound:
+      description: Ресурс не найден в базе данных
       content:
         application/json:
           schema:
