@@ -28,6 +28,11 @@ services:
       - DB_PASSWORD=password
       - DB_NAME=tasktracker
       - DATABASE_URL=postgres://user:password@db:5432/tasktracker?sslmode=disable
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM:-${SMTP_USERNAME}}
     volumes:
       - ./frontend.html:/app/frontend.html
     networks:

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -82,11 +83,10 @@ func sendEmail(to, subject, body string) error {
 	msg += "\r\n" + body
 
 	addr := fmt.Sprintf("%s:%d", smtpCfg.Host, smtpCfg.Port)
-	tlsConfig := &tls.Config{ServerName: smtpCfg.Host}
 
-	conn, err := tls.Dial("tcp", addr, tlsConfig)
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
-		return fmt.Errorf("tls dial: %w", err)
+		return fmt.Errorf("net dial: %w", err)
 	}
 	defer conn.Close()
 
@@ -95,6 +95,10 @@ func sendEmail(to, subject, body string) error {
 		return fmt.Errorf("smtp client: %w", err)
 	}
 	defer client.Close()
+
+	if err = client.StartTLS(&tls.Config{ServerName: smtpCfg.Host}); err != nil {
+		return fmt.Errorf("starttls: %w", err)
+	}
 
 	auth := smtp.PlainAuth("", smtpCfg.Username, smtpCfg.Password, smtpCfg.Host)
 	if err = client.Auth(auth); err != nil {
@@ -118,7 +122,6 @@ func sendEmail(to, subject, body string) error {
 		return fmt.Errorf("smtp close: %w", err)
 	}
 
-	// Fallback: try STARTTLS if TLS fails
 	return client.Quit()
 }
 
@@ -351,7 +354,8 @@ func (s *TaskTrackerServer) ForgotPassword(w http.ResponseWriter, r *http.Reques
 	`, user.Email, resetLink, resetLink)
 
 	if err := sendEmail(user.Email, "Сброс пароля - Task Tracker", emailBody); err != nil {
-		sendError(w, http.StatusInternalServerError, "EMAIL_ERROR", "Ошибка отправки email")
+		fmt.Printf("[EMAIL ERROR] %v\n", err)
+		sendError(w, http.StatusInternalServerError, "EMAIL_ERROR", err.Error())
 		return
 	}
 	jsonWrite(w, http.StatusOK, map[string]string{
