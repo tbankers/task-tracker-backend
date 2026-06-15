@@ -789,7 +789,7 @@ func main() {
 
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgres://postgres:password@localhost:5432/tasktracker?sslmode=disable"
+		dbURL = "postgres://postgres:password@localhost:5433/tasktracker?sslmode=disable"
 	}
 
 	conn, err := pgx.Connect(ctx, dbURL)

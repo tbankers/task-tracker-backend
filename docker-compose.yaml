@@ -6,11 +6,13 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: tasktracker
     ports:
-      - "8100:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - app_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d tasktracker"]
+      test: [ "CMD-SHELL", "pg_isready -U user -d tasktracker" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -25,9 +27,16 @@ services:
       - DB_USER=user
       - DB_PASSWORD=password
       - DB_NAME=tasktracker
+      - DATABASE_URL=postgres://user:password@db:5432/tasktracker?sslmode=disable
+    networks:
+      - app_network
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   pgdata:
+
+networks:
+  app_network:
+    driver: bridge
