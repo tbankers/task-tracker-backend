@@ -12,6 +12,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addBlockpoint = `-- name: AddBlockpoint :exec
+INSERT INTO task_blockpoints (task_id, blocked_by_task_id)
+VALUES ($1, $2)
+ON CONFLICT DO NOTHING
+`
+
+type AddBlockpointParams struct {
+	TaskID          int32
+	BlockedByTaskID int32
+}
+
+func (q *Queries) AddBlockpoint(ctx context.Context, arg AddBlockpointParams) error {
+	_, err := q.db.Exec(ctx, addBlockpoint, arg.TaskID, arg.BlockedByTaskID)
+	return err
+}
+
 const addMember = `-- name: AddMember :one
 INSERT INTO workspace_members (user_id, workspace_id, role)
 VALUES($1, $2, $3)
@@ -168,6 +184,16 @@ func (q *Queries) CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams
 	return workspace_id, err
 }
 
+const deleteAllBlockpointsForTask = `-- name: DeleteAllBlockpointsForTask :exec
+DELETE FROM task_blockpoints
+WHERE task_id = $1
+`
+
+func (q *Queries) DeleteAllBlockpointsForTask(ctx context.Context, taskID int32) error {
+	_, err := q.db.Exec(ctx, deleteAllBlockpointsForTask, taskID)
+	return err
+}
+
 const deleteBoard = `-- name: DeleteBoard :exec
 DELETE FROM boards
 WHERE board_id = $1
@@ -280,6 +306,32 @@ func (q *Queries) GetPasswordResetToken(ctx context.Context, token string) (Pass
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getTaskBlockpoints = `-- name: GetTaskBlockpoints :many
+SELECT blocked_by_task_id
+FROM task_blockpoints
+WHERE task_id = $1
+`
+
+func (q *Queries) GetTaskBlockpoints(ctx context.Context, taskID int32) ([]int32, error) {
+	rows, err := q.db.Query(ctx, getTaskBlockpoints, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var blocked_by_task_id int32
+		if err := rows.Scan(&blocked_by_task_id); err != nil {
+			return nil, err
+		}
+		items = append(items, blocked_by_task_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getTasksFromBoard = `-- name: GetTasksFromBoard :many
@@ -482,6 +534,21 @@ type ManageMemberParams struct {
 
 func (q *Queries) ManageMember(ctx context.Context, arg ManageMemberParams) error {
 	_, err := q.db.Exec(ctx, manageMember, arg.Role, arg.UserID)
+	return err
+}
+
+const removeBlockpoint = `-- name: RemoveBlockpoint :exec
+DELETE FROM task_blockpoints
+WHERE task_id = $1 AND blocked_by_task_id = $2
+`
+
+type RemoveBlockpointParams struct {
+	TaskID          int32
+	BlockedByTaskID int32
+}
+
+func (q *Queries) RemoveBlockpoint(ctx context.Context, arg RemoveBlockpointParams) error {
+	_, err := q.db.Exec(ctx, removeBlockpoint, arg.TaskID, arg.BlockedByTaskID)
 	return err
 }
 

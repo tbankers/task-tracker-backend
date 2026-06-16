@@ -126,6 +126,11 @@ type Task struct {
 	Status      NullTaskStatus
 }
 
+type TaskBlockpoint struct {
+	TaskID          int32
+	BlockedByTaskID int32
+}
+
 type User struct {
 	UserID       uuid.UUID
 	Email        string

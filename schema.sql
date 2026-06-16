@@ -63,6 +63,13 @@ CREATE TABLE password_reset_tokens (
 CREATE INDEX idx_password_reset_tokens_token ON password_reset_tokens(token);
 CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
 
+--task_blockpoints (task dependencies: blocked_task cannot be done until blocker_task is done)
+CREATE TABLE task_blockpoints (
+    task_id INT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+    blocked_by_task_id INT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+    PRIMARY KEY (task_id, blocked_by_task_id)
+);
+
 CREATE INDEX board_of_task ON tasks(board_id); 
 CREATE INDEX assigned_user ON tasks(assigned_id); 
 CREATE INDEX ws_member ON workspace_members(user_id); 

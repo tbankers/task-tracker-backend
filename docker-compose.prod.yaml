@@ -10,3 +10,16 @@ services:
       - SMTP_USERNAME=${SMTP_USERNAME}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_FROM=${SMTP_FROM:-${SMTP_USERNAME}}
+      - FRONTEND_URL=${FRONTEND_URL:-https://localhost}
+      - CORS_ORIGIN=${CORS_ORIGIN:-https://localhost}
+
+  frontend:
+    image: ghcr.io/${GITHUB_REPO:-tbankers/task-tracker-frontend}:${IMAGE_TAG:-latest}
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ${SSL_CERT_PATH:-/etc/letsencrypt/live/${DOMAIN:-localhost}/fullchain.pem}:/etc/nginx/ssl/cert.pem:ro
+      - ${SSL_KEY_PATH:-/etc/letsencrypt/live/${DOMAIN:-localhost}/privkey.pem}:/etc/nginx/ssl/key.pem:ro
+    depends_on:
+      - app

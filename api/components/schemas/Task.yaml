@@ -27,3 +27,8 @@ properties:
   updated_at:
     type: string
     format: date-time
+  blocked_by:
+    type: array
+    items:
+      type: integer
+    description: List of task IDs that must be completed before this task
