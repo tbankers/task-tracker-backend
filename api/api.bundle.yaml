@@ -744,6 +744,89 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       tags:
         - tasks
+  /tasks/{task_id}/blockpoints:
+    get:
+      operationId: getTaskBlockpoints
+      summary: get task blockpoints
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Got task blockpoints successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskBlockpoints'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - blockpoints
+    post:
+      operationId: addBlockpoint
+      summary: add blockpoint to task
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                blocked_by_task_id:
+                  type: integer
+              required:
+                - blocked_by_task_id
+      responses:
+        '201':
+          description: Added blockpoint successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - blockpoints
+  /tasks/{task_id}/blockpoints/{blocked_by_task_id}:
+    delete:
+      operationId: removeBlockpoint
+      summary: remove blockpoint from task
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: blocked_by_task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Removed blockpoint successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - blockpoints
 components:
   schemas:
     RegisterRequest:
@@ -929,10 +1012,25 @@ components:
         updated_at:
           type: string
           format: date-time
+        blocked_by:
+          description: List of task IDs that must be completed before this task
+          type: array
+          items:
+            type: integer
     Tasks:
       type: array
       items:
         $ref: '#/components/schemas/Task'
+    TaskBlockpoints:
+      type: object
+      properties:
+        task_id:
+          type: integer
+        blocked_by:
+          description: List of task IDs that must be completed before this task
+          type: array
+          items:
+            type: integer
   responses:
     BadRequest:
       description: Невалидные входные данные или неверный формат UUID

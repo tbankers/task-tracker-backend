@@ -36,6 +36,10 @@ paths:
     $ref: paths/boards_{board_id}_tasks.yaml
   /tasks/{task_id}:
     $ref: paths/tasks_{task_id}.yaml
+  /tasks/{task_id}/blockpoints:
+    $ref: paths/tasks_{task_id}_blockpoints.yaml
+  /tasks/{task_id}/blockpoints/{blocked_by_task_id}:
+    $ref: paths/tasks_{task_id}_blockpoints_{blocked_by_task_id}.yaml
 components:
   schemas:
     UserResponse:
@@ -60,6 +64,8 @@ components:
       $ref: components/schemas/Task.yaml
     Tasks:
       $ref: components/schemas/Tasks.yaml
+    TaskBlockpoints:
+      $ref: components/schemas/TaskBlockpoints.yaml
     ErrorResponse:
       $ref: components/schemas/ErrorResponse.yaml
     RegisterRequest:

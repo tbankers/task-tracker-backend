@@ -1,0 +1,23 @@
+delete:
+  operationId: removeBlockpoint
+  summary: remove blockpoint from task
+  parameters:
+    - name: task_id
+      in: path
+      required: true
+      schema:
+        type: integer
+    - name: blocked_by_task_id
+      in: path
+      required: true
+      schema:
+        type: integer
+  responses:
+    '204':
+      description: Removed blockpoint successfully
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    '500':
+      $ref: ../components/responses/InternalServerError.yaml
+  tags:
+    - blockpoints

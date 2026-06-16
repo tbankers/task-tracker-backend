@@ -191,7 +191,7 @@ func (w *statusResponseWriter) WriteHeader(code int) {
 
 func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/auth/") || strings.HasPrefix(r.URL.Path, "/frontend") {
+		if strings.HasPrefix(r.URL.Path, "/auth/") {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -221,6 +221,24 @@ func getUserID(r *http.Request) string {
 		return v.(string)
 	}
 	return ""
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := getEnv("CORS_ORIGIN", "https://localhost")
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Max-Age", "86400")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func generateResetToken() (string, error) {
@@ -693,6 +711,14 @@ func (s *TaskTrackerServer) GetTasksFromBoard(w http.ResponseWriter, r *http.Req
 		updatedAt := t.UpdatedAt.Time
 		task["created_at"] = createdAt
 		task["updated_at"] = updatedAt
+
+		blockpoints, err := s.Queries.GetTaskBlockpoints(r.Context(), t.TaskID)
+		if err == nil {
+			task["blocked_by"] = blockpoints
+		} else {
+			task["blocked_by"] = []int32{}
+		}
+
 		response = append(response, task)
 	}
 	jsonWrite(w, http.StatusOK, response)
@@ -729,6 +755,7 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 		"status":     "to_do",
 		"created_at": now,
 		"updated_at": now,
+		"blocked_by": []int32{},
 	})
 }
 
@@ -753,7 +780,57 @@ func (s *TaskTrackerServer) ChangeTaskStatus(w http.ResponseWriter, r *http.Requ
 }
 
 func (s *TaskTrackerServer) DeleteTask(w http.ResponseWriter, r *http.Request, taskId int) {
+	_ = s.Queries.DeleteAllBlockpointsForTask(r.Context(), int32(taskId))
 	err := s.Queries.DeleteTask(r.Context(), int32(taskId))
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// --- Blockpoint handlers ---
+
+func (s *TaskTrackerServer) GetTaskBlockpoints(w http.ResponseWriter, r *http.Request, taskId int) {
+	blockpoints, err := s.Queries.GetTaskBlockpoints(r.Context(), int32(taskId))
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
+		return
+	}
+	jsonWrite(w, http.StatusOK, map[string]interface{}{
+		"task_id":     taskId,
+		"blocked_by":  blockpoints,
+	})
+}
+
+func (s *TaskTrackerServer) AddBlockpoint(w http.ResponseWriter, r *http.Request, taskId int) {
+	var body struct {
+		BlockedByTaskId int `json:"blocked_by_task_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
+		return
+	}
+	if body.BlockedByTaskId == taskId {
+		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Задача не может блокировать сама себя")
+		return
+	}
+	err := s.Queries.AddBlockpoint(r.Context(), db.AddBlockpointParams{
+		TaskID:          int32(taskId),
+		BlockedByTaskID: int32(body.BlockedByTaskId),
+	})
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
+		return
+	}
+	jsonWrite(w, http.StatusCreated, map[string]string{"message": "Блокпоинт добавлен"})
+}
+
+func (s *TaskTrackerServer) RemoveBlockpoint(w http.ResponseWriter, r *http.Request, taskId int, blockedByTaskId int) {
+	err := s.Queries.RemoveBlockpoint(r.Context(), db.RemoveBlockpointParams{
+		TaskID:          int32(taskId),
+		BlockedByTaskID: int32(blockedByTaskId),
+	})
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
@@ -848,18 +925,11 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(requestLogger)
 	r.Use(middleware.Recoverer)
+	r.Use(corsMiddleware)
 
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware)
 		api.HandlerFromMux(serverImpl, r)
-	})
-
-	r.Get("/frontend", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "frontend.html")
-	})
-
-	r.Get("/app", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "app.html")
 	})
 
 	port := getEnv("APP_PORT", "8080")

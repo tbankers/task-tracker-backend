@@ -33,14 +33,23 @@ services:
       - SMTP_USERNAME=${SMTP_USERNAME}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_FROM=${SMTP_FROM:-${SMTP_USERNAME}}
-    volumes:
-      - ./frontend.html:/app/frontend.html
-      - ../task-tracker-frontend/task-tracker.html:/app/app.html
+      - FRONTEND_URL=${FRONTEND_URL:-https://localhost}
+      - CORS_ORIGIN=${CORS_ORIGIN:-https://localhost}
     networks:
       - app_network
     depends_on:
       db:
         condition: service_healthy
+
+  frontend:
+    build: ../task-tracker-frontend
+    ports:
+      - "443:443"
+      - "80:80"
+    networks:
+      - app_network
+    depends_on:
+      - app
 
 volumes:
   pgdata:

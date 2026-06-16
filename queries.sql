@@ -127,3 +127,21 @@ WHERE token = $1;
 -- name: DeleteExpiredTokens :exec
 DELETE FROM password_reset_tokens
 WHERE expires_at < NOW();
+
+-- name: GetTaskBlockpoints :many
+SELECT blocked_by_task_id
+FROM task_blockpoints
+WHERE task_id = $1;
+
+-- name: AddBlockpoint :exec
+INSERT INTO task_blockpoints (task_id, blocked_by_task_id)
+VALUES ($1, $2)
+ON CONFLICT DO NOTHING;
+
+-- name: RemoveBlockpoint :exec
+DELETE FROM task_blockpoints
+WHERE task_id = $1 AND blocked_by_task_id = $2;
+
+-- name: DeleteAllBlockpointsForTask :exec
+DELETE FROM task_blockpoints
+WHERE task_id = $1;
