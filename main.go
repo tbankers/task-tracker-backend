@@ -264,10 +264,6 @@ func jsonWrite(w http.ResponseWriter, status int, v interface{}) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
-// --- Auth handlers ---
-
-<<<<<<< Updated upstream
-=======
 const emailBaseTemplate = `<!DOCTYPE html>
 <html lang="ru">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -303,6 +299,15 @@ func passwordResetEmailHTML(email, link string) string {
 	return renderEmail(content)
 }
 
+func passwordChangedEmailHTML(email string) string {
+	content := fmt.Sprintf(`<tr><td style="padding:40px;">
+<h2 style="color:#1E293B;font-size:20px;margin:0 0 8px;">Пароль изменён</h2>
+<p style="color:#64748B;font-size:14px;line-height:1.6;margin:0 0 24px;">Пароль для аккаунта <strong>%s</strong> был успешно изменён.</p>
+<p style="color:#94A3B8;font-size:12px;margin:28px 0 0;line-height:1.6;">Если вы не меняли пароль, немедленно обратитесь в поддержку.</p>
+</td></tr>`, escHTML(email))
+	return renderEmail(content)
+}
+
 func escHTML(s string) string {
 	s = strings.ReplaceAll(s, "&", "&amp;")
 	s = strings.ReplaceAll(s, "<", "&lt;")
@@ -311,7 +316,8 @@ func escHTML(s string) string {
 	return s
 }
 
->>>>>>> Stashed changes
+// --- Auth handlers ---
+
 func (s *TaskTrackerServer) Register(w http.ResponseWriter, r *http.Request) {
 	var body api.RegisterJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -546,6 +552,13 @@ func (s *TaskTrackerServer) ChangePassword(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
+	}
+	user, err := s.Queries.GetUserById(r.Context(), userId)
+	if err == nil {
+		emailBody := passwordChangedEmailHTML(user.Email)
+		if err := sendEmail(user.Email, "Пароль изменён - Task Tracker", emailBody); err != nil {
+			fmt.Printf("[EMAIL ERROR] %v\n", err)
+		}
 	}
 	jsonWrite(w, http.StatusOK, map[string]string{"message": "Пароль изменён"})
 }
