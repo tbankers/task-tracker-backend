@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -821,7 +821,7 @@ func (s *TaskTrackerServer) DeleteBoard(w http.ResponseWriter, r *http.Request, 
 // --- Task handlers ---
 
 func (s *TaskTrackerServer) GetTasksFromBoard(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
-	tasks, err := s.Queries.GetTasksFromBoard(r.Context(), &boardId)
+	tasks, err := s.Queries.GetTasksFromBoard(r.Context(), boardId)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
@@ -830,16 +830,13 @@ func (s *TaskTrackerServer) GetTasksFromBoard(w http.ResponseWriter, r *http.Req
 	for _, t := range tasks {
 		task := map[string]interface{}{
 			"id":       t.TaskID,
-			"board_id": t.BoardID,
+			"board_id": boardId,
 		}
 		if t.Title.Valid {
 			task["title"] = t.Title.String
 		}
 		if t.Description.Valid {
 			task["description"] = t.Description.String
-		}
-		if t.Status.Valid {
-			task["status"] = string(t.Status.TaskStatus)
 		}
 		if t.AssignedID != nil {
 			task["assigned_id"] = t.AssignedID
@@ -865,7 +862,12 @@ func (s *TaskTrackerServer) GetTasksFromBoard(w http.ResponseWriter, r *http.Req
 }
 
 func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
-	var body api.CreateTaskJSONRequestBody
+	var body struct {
+		Title       string     `json:"title"`
+		Description string     `json:"description"`
+		ColumnID    *uuid.UUID `json:"column_id"`
+		AssignedID  *uuid.UUID `json:"assigned_id"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
 		return
@@ -877,11 +879,11 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 		createdBy = &u
 	}
 	taskID, err := s.Queries.CreateTask(r.Context(), db.CreateTaskParams{
-		BoardID:     &boardId,
+		ColumnID:    body.ColumnID,
 		CreatedBy:   createdBy,
 		Title:       pgtype.Text{String: body.Title, Valid: true},
-		Description: pgtype.Text{},
-		AssignedID:  nil,
+		Description: pgtype.Text{String: body.Description, Valid: body.Description != ""},
+		AssignedID:  body.AssignedID,
 	})
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
@@ -892,31 +894,40 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 		"id":         taskID,
 		"board_id":   boardId.String(),
 		"title":      body.Title,
-		"status":     "to_do",
 		"created_at": now,
 		"updated_at": now,
 		"blocked_by": []int32{},
 	})
 }
 
-func (s *TaskTrackerServer) ChangeTaskStatus(w http.ResponseWriter, r *http.Request, taskId int) {
-	var body api.ChangeTaskStatusJSONRequestBody
+func (s *TaskTrackerServer) UpdateTask(w http.ResponseWriter, r *http.Request, taskId int) {
+	var body struct {
+		Title       *string    `json:"title"`
+		Description *string    `json:"description"`
+		AssignedID  *uuid.UUID `json:"assigned_id"`
+		ColumnID    *uuid.UUID `json:"column_id"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
 		return
 	}
-	err := s.Queries.ChangeTaskStatus(r.Context(), db.ChangeTaskStatusParams{
-		Status: db.NullTaskStatus{
-			TaskStatus: db.TaskStatus(body.Status),
-			Valid:      true,
-		},
+	params := db.UpdateTaskParams{
 		TaskID: int32(taskId),
-	})
+	}
+	if body.Title != nil {
+		params.Title = pgtype.Text{String: *body.Title, Valid: true}
+	}
+	if body.Description != nil {
+		params.Description = pgtype.Text{String: *body.Description, Valid: true}
+	}
+	params.AssignedID = body.AssignedID
+	params.ColumnID = body.ColumnID
+	err := s.Queries.UpdateTask(r.Context(), params)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
 	}
-	jsonWrite(w, http.StatusOK, map[string]string{"message": "Статус задачи обновлён"})
+	jsonWrite(w, http.StatusOK, map[string]string{"message": "Задача обновлена"})
 }
 
 func (s *TaskTrackerServer) DeleteTask(w http.ResponseWriter, r *http.Request, taskId int) {
@@ -938,8 +949,8 @@ func (s *TaskTrackerServer) GetTaskBlockpoints(w http.ResponseWriter, r *http.Re
 		return
 	}
 	jsonWrite(w, http.StatusOK, map[string]interface{}{
-		"task_id":     taskId,
-		"blocked_by":  blockpoints,
+		"task_id":    taskId,
+		"blocked_by": blockpoints,
 	})
 }
 
