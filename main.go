@@ -897,7 +897,19 @@ func (s *TaskTrackerServer) AddMember(w http.ResponseWriter, r *http.Request, wo
 	if body.Role != nil {
 		role = db.NullMemberRole{MemberRole: db.MemberRole(*body.Role), Valid: true}
 	}
-	_, err := s.Queries.AddMember(r.Context(), db.AddMemberParams{
+	_, err := s.Queries.GetWorkspaceById(r.Context(), workspaceId)
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Воркспейс не найден")
+		return
+	}
+
+	_, err = s.Queries.GetUserById(r.Context(), body.UserId)
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Пользователь не найден")
+		return
+	}
+
+	_, err = s.Queries.AddMember(r.Context(), db.AddMemberParams{
 		UserID:      body.UserId,
 		WorkspaceID: workspaceId,
 		Role:        role,
