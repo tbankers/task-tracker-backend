@@ -289,18 +289,6 @@ func renderEmail(content string) string {
 	return tmpl
 }
 
-func verificationEmailHTML(username, link string) string {
-	content := fmt.Sprintf(`<tr><td style="padding:40px;">
-<h2 style="color:#1E293B;font-size:20px;margin:0 0 8px;">Подтвердите email</h2>
-<p style="color:#64748B;font-size:14px;line-height:1.6;margin:0 0 24px;">Привет, %s! Завершите регистрацию, нажав кнопку ниже.</p>
-<table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr><td style="background:linear-gradient(135deg,#7C3AED,#4338CA);border-radius:8px;">
-<a href="%s" style="display:inline-block;padding:14px 32px;color:#fff;font-size:15px;font-weight:600;text-decoration:none;">Подтвердить email</a>
-</td></tr></table>
-<p style="color:#94A3B8;font-size:12px;margin:28px 0 0;line-height:1.6;">Если вы не регистрировались в Task Tracker, просто проигнорируйте это письмо.</p>
-</td></tr>`, escHTML(username), link)
-	return renderEmail(content)
-}
-
 func passwordResetEmailHTML(email, link string) string {
 	content := fmt.Sprintf(`<tr><td style="padding:40px;">
 <h2 style="color:#1E293B;font-size:20px;margin:0 0 8px;">Сброс пароля</h2>
@@ -346,32 +334,20 @@ func (s *TaskTrackerServer) Register(w http.ResponseWriter, r *http.Request) {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
 	}
-
-	verificationToken, err := generateResetToken()
+	token, err := generateToken(userID.String(), string(body.Email))
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "TOKEN_ERROR", "Ошибка генерации токена")
 		return
 	}
-	expiresAt := pgtype.Timestamp{Time: time.Now().Add(24 * time.Hour), Valid: true}
-	_, err = s.Queries.CreateEmailVerificationToken(r.Context(), db.CreateEmailVerificationTokenParams{
-		UserID:    userID,
-		Token:     verificationToken,
-		ExpiresAt: expiresAt,
-	})
-	if err != nil {
-		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
-		return
-	}
-
-	verifyLink := fmt.Sprintf("%s/#/verify-email?token=%s", getEnv("FRONTEND_URL", "http://localhost:3000"), verificationToken)
-	emailBody := verificationEmailHTML(body.Username, verifyLink)
-
-	if err := sendEmail(string(body.Email), "Подтвердите email — Task Tracker", emailBody); err != nil {
-		fmt.Printf("[EMAIL ERROR] %v\n", err)
-	}
-
+	now := time.Now()
 	jsonWrite(w, http.StatusCreated, map[string]interface{}{
-		"message": "Аккаунт создан. Проверьте почту для подтверждения email.",
+		"token": token,
+		"user": map[string]interface{}{
+			"user_id":    userID.String(),
+			"email":      string(body.Email),
+			"username":   body.Username,
+			"created_at": now,
+		},
 	})
 }
 
@@ -388,10 +364,6 @@ func (s *TaskTrackerServer) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(body.Password)); err != nil {
 		sendError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Неверный email или пароль")
-		return
-	}
-	if !user.EmailVerified {
-		sendError(w, http.StatusForbidden, "EMAIL_NOT_VERIFIED", "Подтвердите email. Письмо с ссылкой отправлено при регистрации.")
 		return
 	}
 	token, err := generateToken(user.UserID.String(), user.Email)
@@ -484,82 +456,6 @@ func (s *TaskTrackerServer) ResetPassword(w http.ResponseWriter, r *http.Request
 	_ = s.Queries.DeletePasswordResetToken(r.Context(), body.Token)
 	jsonWrite(w, http.StatusOK, map[string]string{
 		"message": "Пароль успешно изменён",
-	})
-}
-
-func (s *TaskTrackerServer) VerifyEmail(w http.ResponseWriter, r *http.Request) {
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Токен не указан")
-		return
-	}
-	verificationToken, err := s.Queries.GetEmailVerificationToken(r.Context(), token)
-	if err != nil {
-		sendError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Неверный или просроченный токен")
-		return
-	}
-	if time.Now().After(verificationToken.ExpiresAt.Time) {
-		_ = s.Queries.DeleteEmailVerificationToken(r.Context(), token)
-		sendError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Токен просрочен")
-		return
-	}
-	err = s.Queries.SetEmailVerified(r.Context(), verificationToken.UserID)
-	if err != nil {
-		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
-		return
-	}
-	_ = s.Queries.DeleteEmailVerificationToken(r.Context(), token)
-	jsonWrite(w, http.StatusOK, map[string]string{
-		"message": "Email подтверждён",
-	})
-}
-
-func (s *TaskTrackerServer) ResendVerification(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Email string `json:"email"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
-		return
-	}
-	user, err := s.Queries.GetUserByEmail(r.Context(), body.Email)
-	if err != nil {
-		jsonWrite(w, http.StatusOK, map[string]string{
-			"message": "Если пользователь с таким email существует, письмо отправлено",
-		})
-		return
-	}
-	if user.EmailVerified {
-		jsonWrite(w, http.StatusOK, map[string]string{
-			"message": "Email уже подтверждён",
-		})
-		return
-	}
-	_ = s.Queries.DeleteEmailVerificationTokensByUserID(r.Context(), user.UserID)
-	verificationToken, err := generateResetToken()
-	if err != nil {
-		sendError(w, http.StatusInternalServerError, "TOKEN_ERROR", "Ошибка генерации токена")
-		return
-	}
-	expiresAt := pgtype.Timestamp{Time: time.Now().Add(24 * time.Hour), Valid: true}
-	_, err = s.Queries.CreateEmailVerificationToken(r.Context(), db.CreateEmailVerificationTokenParams{
-		UserID:    user.UserID,
-		Token:     verificationToken,
-		ExpiresAt: expiresAt,
-	})
-	if err != nil {
-		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
-		return
-	}
-	verifyLink := fmt.Sprintf("%s/#/verify-email?token=%s", getEnv("FRONTEND_URL", "http://localhost:3000"), verificationToken)
-	emailBody := verificationEmailHTML(user.Username, verifyLink)
-	if err := sendEmail(user.Email, "Подтвердите email — Task Tracker", emailBody); err != nil {
-		fmt.Printf("[EMAIL ERROR] %v\n", err)
-		sendError(w, http.StatusInternalServerError, "EMAIL_ERROR", err.Error())
-		return
-	}
-	jsonWrite(w, http.StatusOK, map[string]string{
-		"message": "Письмо с подтверждением отправлено",
 	})
 }
 
@@ -1069,8 +965,6 @@ func main() {
 
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware)
-		r.Post("/auth/verify-email", serverImpl.VerifyEmail)
-		r.Post("/auth/resend-verification", serverImpl.ResendVerification)
 		api.HandlerFromMux(serverImpl, r)
 	})
 
