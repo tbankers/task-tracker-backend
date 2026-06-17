@@ -55,55 +55,20 @@ func (ns NullMemberRole) Value() (driver.Value, error) {
 	return string(ns.MemberRole), nil
 }
 
-type TaskStatus string
-
-const (
-	TaskStatusToDo       TaskStatus = "to_do"
-	TaskStatusInProgress TaskStatus = "in_progress"
-	TaskStatusDone       TaskStatus = "done"
-)
-
-func (e *TaskStatus) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = TaskStatus(s)
-	case string:
-		*e = TaskStatus(s)
-	default:
-		return fmt.Errorf("unsupported scan type for TaskStatus: %T", src)
-	}
-	return nil
-}
-
-type NullTaskStatus struct {
-	TaskStatus TaskStatus
-	Valid      bool // Valid is true if TaskStatus is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullTaskStatus) Scan(value interface{}) error {
-	if value == nil {
-		ns.TaskStatus, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.TaskStatus.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullTaskStatus) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.TaskStatus), nil
-}
-
 type Board struct {
 	BoardID     uuid.UUID
 	Title       pgtype.Text
 	WorkspaceID *uuid.UUID
 	CreatedAt   pgtype.Timestamp
 	CreatedBy   *uuid.UUID
+}
+
+type Column struct {
+	ColumnID  uuid.UUID
+	BoardID   uuid.UUID
+	Name      string
+	Position  int32
+	CreatedAt pgtype.Timestamp
 }
 
 type EmailVerificationToken struct {
@@ -124,14 +89,13 @@ type PasswordResetToken struct {
 
 type Task struct {
 	TaskID      int32
-	BoardID     *uuid.UUID
 	CreatedBy   *uuid.UUID
 	CreatedAt   pgtype.Timestamp
 	UpdatedAt   pgtype.Timestamp
 	AssignedID  *uuid.UUID
 	Title       pgtype.Text
 	Description pgtype.Text
-	Status      NullTaskStatus
+	ColumnID    *uuid.UUID
 }
 
 type TaskBlockpoint struct {

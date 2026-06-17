@@ -626,68 +626,126 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       tags:
         - boards
-  /boards/{board_id}/tasks:
-    post:
-      operationId: createTask
-      summary: create task
-      parameters:
-        - name: board_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
+  /boards/{board_id}/columns:
+  get:
+    operationId: getBoardColumns
+    summary: Get all columns for a board
+    parameters:
+      - name: board_id
+        in: path
         required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: success
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                title:
-                  type: string
-              required:
-                - title
-      responses:
-        '201':
-          description: Created task successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Task'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      tags:
-        - tasks
-    get:
-      operationId: getTasksFromBoard
-      summary: get all tasks from a board
-      parameters:
-        - name: board_id
-          in: path
-          required: true
+              type: array
+              items:
+                $ref: '#/components/schemas/Column'
+  post:
+    operationId: createColumn
+    summary: Create a new column
+    parameters:
+      - name: board_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
           schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Got all board tasks successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Tasks'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      tags:
-        - tasks
+            type: object
+            properties:
+              name:
+                type: string
+              position:
+                type: integer
+            required:
+              - name
+    responses:
+      '201':
+        description: Column created
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Column'
+
+/columns/{column_id}:
+  delete:
+    operationId: deleteColumn
+    summary: Delete a column
+    parameters:
+      - name: column_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '204':
+        description: Deleted
+
+/columns/{column_id}/tasks:
+  get:
+    operationId: getColumnTasks
+    summary: Get tasks in a column
+    parameters:
+      - name: column_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: success
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Task'
+  post:
+    operationId: createTask
+    summary: Create a task in a column
+    parameters:
+      - name: column_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              assigned_id:
+                type: string
+                format: uuid
+                nullable: true
+            required:
+              - name
+    responses:
+      '201':
+        description: Task created
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
   /tasks/{task_id}:
     patch:
       operationId: changeTaskStatus
@@ -699,16 +757,22 @@ paths:
           schema:
             type: integer
       requestBody:
-        required: true
         content:
           application/json:
-            schema:
-              type: object
-              properties:
-                status:
-                  $ref: '#/components/schemas/TaskStatus'
-              required:
-                - status
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+            description:
+              type: string
+            column_id:
+              type: string
+              format: uuid
+            assigned_id:
+              type: string
+              format: uuid
+              nullable: true
       responses:
         '200':
           description: Changed task status successfully
@@ -976,28 +1040,35 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Board'
-    TaskStatus:
+    Column:
+  type: object
+  properties:
+    id:
       type: string
-      enum:
-        - to_do
-        - in_progress
-        - done
+      format: uuid
+    board_id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    position:
+      type: integer
+    created_at:
+      type: string
+      format: date-time
     Task:
       type: object
       properties:
-        task_id:
+        id:
+          type: integer
+        column_id:
           type: string
           format: uuid
-        board_id:
-          type: string
-          format: uuid
-        title:
+        name:
           type: string
         description:
           type: string
           nullable: true
-        status:
-          $ref: '#/components/schemas/TaskStatus'
         assigned_id:
           type: string
           format: uuid

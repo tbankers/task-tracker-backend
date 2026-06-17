@@ -13,8 +13,8 @@ import (
 )
 
 const addBlockpoint = `-- name: AddBlockpoint :exec
-INSERT INTO task_blockpoints (task_id, blocked_by_task_id)
-VALUES ($1, $2)
+INSERT INTO task_blockpoints (task_id, blocked_by_task_id) 
+VALUES ($1, $2) 
 ON CONFLICT DO NOTHING
 `
 
@@ -29,8 +29,8 @@ func (q *Queries) AddBlockpoint(ctx context.Context, arg AddBlockpointParams) er
 }
 
 const addMember = `-- name: AddMember :one
-INSERT INTO workspace_members (user_id, workspace_id, role)
-VALUES($1, $2, $3)
+INSERT INTO workspace_members (user_id, workspace_id, role) 
+VALUES($1, $2, $3) 
 RETURNING user_id
 `
 
@@ -48,9 +48,7 @@ func (q *Queries) AddMember(ctx context.Context, arg AddMemberParams) (uuid.UUID
 }
 
 const changePassword = `-- name: ChangePassword :exec
-UPDATE users 
-SET password_hash = $1
-WHERE user_id = $2
+UPDATE users SET password_hash = $1 WHERE user_id = $2
 `
 
 type ChangePasswordParams struct {
@@ -63,25 +61,9 @@ func (q *Queries) ChangePassword(ctx context.Context, arg ChangePasswordParams) 
 	return err
 }
 
-const changeTaskStatus = `-- name: ChangeTaskStatus :exec
-UPDATE tasks
-SET status = $1
-WHERE task_id = $2
-`
-
-type ChangeTaskStatusParams struct {
-	Status NullTaskStatus
-	TaskID int32
-}
-
-func (q *Queries) ChangeTaskStatus(ctx context.Context, arg ChangeTaskStatusParams) error {
-	_, err := q.db.Exec(ctx, changeTaskStatus, arg.Status, arg.TaskID)
-	return err
-}
-
 const createBoard = `-- name: CreateBoard :one
-INSERT INTO boards (title, workspace_id, created_at, created_by)
-VALUES($1, $2, NOW(), $3)
+INSERT INTO boards (title, workspace_id, created_at, created_by) 
+VALUES($1, $2, NOW(), $3) 
 RETURNING board_id
 `
 
@@ -98,9 +80,38 @@ func (q *Queries) CreateBoard(ctx context.Context, arg CreateBoardParams) (uuid.
 	return board_id, err
 }
 
+const createColumn = `-- name: CreateColumn :one
+
+INSERT INTO columns (board_id, name, position, created_at)
+VALUES ($1, $2, $3, NOW())
+RETURNING column_id, board_id, name, position, created_at
+`
+
+type CreateColumnParams struct {
+	BoardID  uuid.UUID
+	Name     string
+	Position int32
+}
+
+// =========================================================================
+// NEW NEW NEW: COLUMNS CRUD (Your Dynamic Enum Management)
+// =========================================================================
+func (q *Queries) CreateColumn(ctx context.Context, arg CreateColumnParams) (Column, error) {
+	row := q.db.QueryRow(ctx, createColumn, arg.BoardID, arg.Name, arg.Position)
+	var i Column
+	err := row.Scan(
+		&i.ColumnID,
+		&i.BoardID,
+		&i.Name,
+		&i.Position,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createEmailVerificationToken = `-- name: CreateEmailVerificationToken :one
-INSERT INTO email_verification_tokens (user_id, token, expires_at)
-VALUES ($1, $2, $3)
+INSERT INTO email_verification_tokens (user_id, token, expires_at) 
+VALUES ($1, $2, $3) 
 RETURNING token_id
 `
 
@@ -118,8 +129,9 @@ func (q *Queries) CreateEmailVerificationToken(ctx context.Context, arg CreateEm
 }
 
 const createPasswordResetToken = `-- name: CreatePasswordResetToken :one
-INSERT INTO password_reset_tokens (user_id, token, expires_at)
-VALUES ($1, $2, $3)
+
+INSERT INTO password_reset_tokens (user_id, token, expires_at) 
+VALUES ($1, $2, $3) 
 RETURNING token_id
 `
 
@@ -129,6 +141,9 @@ type CreatePasswordResetTokenParams struct {
 	ExpiresAt pgtype.Timestamp
 }
 
+// =========================================================================
+// TOKENS & UTILITIES (Unchanged)
+// =========================================================================
 func (q *Queries) CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (uuid.UUID, error) {
 	row := q.db.QueryRow(ctx, createPasswordResetToken, arg.UserID, arg.Token, arg.ExpiresAt)
 	var token_id uuid.UUID
@@ -137,22 +152,26 @@ func (q *Queries) CreatePasswordResetToken(ctx context.Context, arg CreatePasswo
 }
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (board_id, created_by, title, description, assigned_id)
-VALUES($1, $2, $3, $4, $5)
+
+INSERT INTO tasks (column_id, created_by, title, description, assigned_id) 
+VALUES($1, $2, $3, $4, $5) 
 RETURNING task_id
 `
 
 type CreateTaskParams struct {
-	BoardID     *uuid.UUID
+	ColumnID    *uuid.UUID
 	CreatedBy   *uuid.UUID
 	Title       pgtype.Text
 	Description pgtype.Text
 	AssignedID  *uuid.UUID
 }
 
+// =========================================================================
+// REFACTORED: TASKS CRUD (Uses column_id instead of board_id/status enum)
+// =========================================================================
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (int32, error) {
 	row := q.db.QueryRow(ctx, createTask,
-		arg.BoardID,
+		arg.ColumnID,
 		arg.CreatedBy,
 		arg.Title,
 		arg.Description,
@@ -165,9 +184,8 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (int32, 
 
 const createUser = `-- name: CreateUser :one
 
-
-INSERT INTO users (email, username, password_hash, email_verified, created_at)
-VALUES($1, $2, $3, FALSE, NOW())
+INSERT INTO users (email, username, password_hash, email_verified, created_at) 
+VALUES($1, $2, $3, FALSE, NOW()) 
 RETURNING user_id
 `
 
@@ -186,8 +204,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (uuid.UU
 }
 
 const createWorkspace = `-- name: CreateWorkspace :one
-INSERT INTO workspaces (created_at, title, created_by)
-VALUES(NOW(), $1, $2)
+INSERT INTO workspaces (created_at, title, created_by) 
+VALUES(NOW(), $1, $2) 
 RETURNING workspace_id
 `
 
@@ -204,8 +222,7 @@ func (q *Queries) CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams
 }
 
 const deleteAllBlockpointsForTask = `-- name: DeleteAllBlockpointsForTask :exec
-DELETE FROM task_blockpoints
-WHERE task_id = $1
+DELETE FROM task_blockpoints WHERE task_id = $1
 `
 
 func (q *Queries) DeleteAllBlockpointsForTask(ctx context.Context, taskID int32) error {
@@ -214,8 +231,7 @@ func (q *Queries) DeleteAllBlockpointsForTask(ctx context.Context, taskID int32)
 }
 
 const deleteBoard = `-- name: DeleteBoard :exec
-DELETE FROM boards
-WHERE board_id = $1
+DELETE FROM boards WHERE board_id = $1
 `
 
 func (q *Queries) DeleteBoard(ctx context.Context, boardID uuid.UUID) error {
@@ -223,9 +239,17 @@ func (q *Queries) DeleteBoard(ctx context.Context, boardID uuid.UUID) error {
 	return err
 }
 
+const deleteColumn = `-- name: DeleteColumn :exec
+DELETE FROM columns WHERE column_id = $1
+`
+
+func (q *Queries) DeleteColumn(ctx context.Context, columnID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteColumn, columnID)
+	return err
+}
+
 const deleteEmailVerificationToken = `-- name: DeleteEmailVerificationToken :exec
-DELETE FROM email_verification_tokens
-WHERE token = $1
+DELETE FROM email_verification_tokens WHERE token = $1
 `
 
 func (q *Queries) DeleteEmailVerificationToken(ctx context.Context, token string) error {
@@ -234,8 +258,7 @@ func (q *Queries) DeleteEmailVerificationToken(ctx context.Context, token string
 }
 
 const deleteEmailVerificationTokensByUserID = `-- name: DeleteEmailVerificationTokensByUserID :exec
-DELETE FROM email_verification_tokens
-WHERE user_id = $1
+DELETE FROM email_verification_tokens WHERE user_id = $1
 `
 
 func (q *Queries) DeleteEmailVerificationTokensByUserID(ctx context.Context, userID uuid.UUID) error {
@@ -244,8 +267,7 @@ func (q *Queries) DeleteEmailVerificationTokensByUserID(ctx context.Context, use
 }
 
 const deleteExpiredTokens = `-- name: DeleteExpiredTokens :exec
-DELETE FROM password_reset_tokens
-WHERE expires_at < NOW()
+DELETE FROM password_reset_tokens WHERE expires_at < NOW()
 `
 
 func (q *Queries) DeleteExpiredTokens(ctx context.Context) error {
@@ -254,8 +276,7 @@ func (q *Queries) DeleteExpiredTokens(ctx context.Context) error {
 }
 
 const deletePasswordResetToken = `-- name: DeletePasswordResetToken :exec
-DELETE FROM password_reset_tokens
-WHERE token = $1
+DELETE FROM password_reset_tokens WHERE token = $1
 `
 
 func (q *Queries) DeletePasswordResetToken(ctx context.Context, token string) error {
@@ -264,8 +285,7 @@ func (q *Queries) DeletePasswordResetToken(ctx context.Context, token string) er
 }
 
 const deleteTask = `-- name: DeleteTask :exec
-DELETE FROM tasks
-WHERE task_id = $1
+DELETE FROM tasks WHERE task_id = $1
 `
 
 func (q *Queries) DeleteTask(ctx context.Context, taskID int32) error {
@@ -274,8 +294,7 @@ func (q *Queries) DeleteTask(ctx context.Context, taskID int32) error {
 }
 
 const deleteWorkspace = `-- name: DeleteWorkspace :exec
-DELETE FROM workspaces
-WHERE workspace_id = $1
+DELETE FROM workspaces WHERE workspace_id = $1
 `
 
 func (q *Queries) DeleteWorkspace(ctx context.Context, workspaceID uuid.UUID) error {
@@ -284,9 +303,7 @@ func (q *Queries) DeleteWorkspace(ctx context.Context, workspaceID uuid.UUID) er
 }
 
 const editBoard = `-- name: EditBoard :exec
-UPDATE boards
-SET title = $1
-WHERE board_id = $2
+UPDATE boards SET title = $1 WHERE board_id = $2
 `
 
 type EditBoardParams struct {
@@ -299,10 +316,25 @@ func (q *Queries) EditBoard(ctx context.Context, arg EditBoardParams) error {
 	return err
 }
 
+const editColumn = `-- name: EditColumn :exec
+UPDATE columns 
+SET name = $1, position = $2 
+WHERE column_id = $3
+`
+
+type EditColumnParams struct {
+	Name     string
+	Position int32
+	ColumnID uuid.UUID
+}
+
+func (q *Queries) EditColumn(ctx context.Context, arg EditColumnParams) error {
+	_, err := q.db.Exec(ctx, editColumn, arg.Name, arg.Position, arg.ColumnID)
+	return err
+}
+
 const editWorkspace = `-- name: EditWorkspace :exec
-UPDATE workspaces 
-SET title = $1
-WHERE workspace_id = $2
+UPDATE workspaces SET title = $1 WHERE workspace_id = $2
 `
 
 type EditWorkspaceParams struct {
@@ -315,9 +347,42 @@ func (q *Queries) EditWorkspace(ctx context.Context, arg EditWorkspaceParams) er
 	return err
 }
 
+const getColumnsFromBoard = `-- name: GetColumnsFromBoard :many
+SELECT column_id, board_id, name, position, created_at
+FROM columns
+WHERE board_id = $1
+ORDER BY position ASC, created_at ASC
+`
+
+func (q *Queries) GetColumnsFromBoard(ctx context.Context, boardID uuid.UUID) ([]Column, error) {
+	rows, err := q.db.Query(ctx, getColumnsFromBoard, boardID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Column
+	for rows.Next() {
+		var i Column
+		if err := rows.Scan(
+			&i.ColumnID,
+			&i.BoardID,
+			&i.Name,
+			&i.Position,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getEmailVerificationToken = `-- name: GetEmailVerificationToken :one
-SELECT token_id, user_id, token, expires_at, created_at
-FROM email_verification_tokens
+SELECT token_id, user_id, token, expires_at, created_at 
+FROM email_verification_tokens 
 WHERE token = $1
 `
 
@@ -335,9 +400,7 @@ func (q *Queries) GetEmailVerificationToken(ctx context.Context, token string) (
 }
 
 const getMemberRoleById = `-- name: GetMemberRoleById :one
-SELECT role
-FROM workspace_members
-WHERE user_id = $1
+SELECT role FROM workspace_members WHERE user_id = $1
 `
 
 func (q *Queries) GetMemberRoleById(ctx context.Context, userID uuid.UUID) (NullMemberRole, error) {
@@ -348,8 +411,8 @@ func (q *Queries) GetMemberRoleById(ctx context.Context, userID uuid.UUID) (Null
 }
 
 const getPasswordResetToken = `-- name: GetPasswordResetToken :one
-SELECT token_id, user_id, token, expires_at, created_at
-FROM password_reset_tokens
+SELECT token_id, user_id, token, expires_at, created_at 
+FROM password_reset_tokens 
 WHERE token = $1
 `
 
@@ -367,9 +430,7 @@ func (q *Queries) GetPasswordResetToken(ctx context.Context, token string) (Pass
 }
 
 const getTaskBlockpoints = `-- name: GetTaskBlockpoints :many
-SELECT blocked_by_task_id
-FROM task_blockpoints
-WHERE task_id = $1
+SELECT blocked_by_task_id FROM task_blockpoints WHERE task_id = $1
 `
 
 func (q *Queries) GetTaskBlockpoints(ctx context.Context, taskID int32) ([]int32, error) {
@@ -393,25 +454,26 @@ func (q *Queries) GetTaskBlockpoints(ctx context.Context, taskID int32) ([]int32
 }
 
 const getTasksFromBoard = `-- name: GetTasksFromBoard :many
-SELECT task_id, board_id, created_at, created_by, updated_at, assigned_id, title, description, status
-FROM tasks 
-WHERE board_id = $1
-ORDER BY created_at ASC
+SELECT t.task_id, t.column_id, t.created_at, t.created_by, t.updated_at, t.assigned_id, t.title, t.description
+FROM tasks t
+JOIN columns c ON t.column_id = c.column_id
+WHERE c.board_id = $1 
+ORDER BY t.created_at ASC
 `
 
 type GetTasksFromBoardRow struct {
 	TaskID      int32
-	BoardID     *uuid.UUID
+	ColumnID    *uuid.UUID
 	CreatedAt   pgtype.Timestamp
 	CreatedBy   *uuid.UUID
 	UpdatedAt   pgtype.Timestamp
 	AssignedID  *uuid.UUID
 	Title       pgtype.Text
 	Description pgtype.Text
-	Status      NullTaskStatus
 }
 
-func (q *Queries) GetTasksFromBoard(ctx context.Context, boardID *uuid.UUID) ([]GetTasksFromBoardRow, error) {
+// Uses a JOIN to fetch all tasks for a board now that board_id is gone from tasks table
+func (q *Queries) GetTasksFromBoard(ctx context.Context, boardID uuid.UUID) ([]GetTasksFromBoardRow, error) {
 	rows, err := q.db.Query(ctx, getTasksFromBoard, boardID)
 	if err != nil {
 		return nil, err
@@ -422,14 +484,61 @@ func (q *Queries) GetTasksFromBoard(ctx context.Context, boardID *uuid.UUID) ([]
 		var i GetTasksFromBoardRow
 		if err := rows.Scan(
 			&i.TaskID,
-			&i.BoardID,
+			&i.ColumnID,
 			&i.CreatedAt,
 			&i.CreatedBy,
 			&i.UpdatedAt,
 			&i.AssignedID,
 			&i.Title,
 			&i.Description,
-			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTasksFromColumn = `-- name: GetTasksFromColumn :many
+SELECT task_id, column_id, created_at, created_by, updated_at, assigned_id, title, description 
+FROM tasks 
+WHERE column_id = $1 
+ORDER BY created_at ASC
+`
+
+type GetTasksFromColumnRow struct {
+	TaskID      int32
+	ColumnID    *uuid.UUID
+	CreatedAt   pgtype.Timestamp
+	CreatedBy   *uuid.UUID
+	UpdatedAt   pgtype.Timestamp
+	AssignedID  *uuid.UUID
+	Title       pgtype.Text
+	Description pgtype.Text
+}
+
+// Keep this only if you intentionally want to paginate or lazy-load individual lists
+func (q *Queries) GetTasksFromColumn(ctx context.Context, columnID *uuid.UUID) ([]GetTasksFromColumnRow, error) {
+	rows, err := q.db.Query(ctx, getTasksFromColumn, columnID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTasksFromColumnRow
+	for rows.Next() {
+		var i GetTasksFromColumnRow
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.ColumnID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.UpdatedAt,
+			&i.AssignedID,
+			&i.Title,
+			&i.Description,
 		); err != nil {
 			return nil, err
 		}
@@ -442,8 +551,8 @@ func (q *Queries) GetTasksFromBoard(ctx context.Context, boardID *uuid.UUID) ([]
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT user_id, email, username, password_hash, email_verified, created_at
-FROM users
+SELECT user_id, email, username, password_hash, email_verified, created_at 
+FROM users 
 WHERE email = $1
 `
 
@@ -462,8 +571,8 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT user_id, email, username, password_hash, email_verified, created_at
-FROM users
+SELECT user_id, email, username, password_hash, email_verified, created_at 
+FROM users 
 WHERE user_id = $1
 `
 
@@ -482,9 +591,9 @@ func (q *Queries) GetUserById(ctx context.Context, userID uuid.UUID) (User, erro
 }
 
 const getUsersWorkspace = `-- name: GetUsersWorkspace :many
-SELECT workspace_id, title, created_by, created_at
-FROM workspaces
-WHERE created_by = $1
+SELECT workspace_id, title, created_by, created_at 
+FROM workspaces 
+WHERE created_by = $1 
 ORDER BY created_at ASC
 `
 
@@ -514,9 +623,9 @@ func (q *Queries) GetUsersWorkspace(ctx context.Context, createdBy *uuid.UUID) (
 }
 
 const getWorkspaceBoards = `-- name: GetWorkspaceBoards :many
-SELECT board_id, title, workspace_id, created_at, created_by
-FROM boards
-WHERE workspace_id = $1
+SELECT board_id, title, workspace_id, created_at, created_by 
+FROM boards 
+WHERE workspace_id = $1 
 ORDER BY created_at ASC
 `
 
@@ -547,8 +656,8 @@ func (q *Queries) GetWorkspaceBoards(ctx context.Context, workspaceID *uuid.UUID
 }
 
 const getWorkspaceById = `-- name: GetWorkspaceById :one
-SELECT workspace_id, title, created_at, created_by
-FROM workspaces
+SELECT workspace_id, title, created_at, created_by 
+FROM workspaces 
 WHERE workspace_id = $1
 `
 
@@ -572,8 +681,7 @@ func (q *Queries) GetWorkspaceById(ctx context.Context, workspaceID uuid.UUID) (
 }
 
 const kickUser = `-- name: KickUser :exec
-DELETE FROM workspace_members
-WHERE user_id = $1
+DELETE FROM workspace_members WHERE user_id = $1
 `
 
 func (q *Queries) KickUser(ctx context.Context, userID uuid.UUID) error {
@@ -582,9 +690,7 @@ func (q *Queries) KickUser(ctx context.Context, userID uuid.UUID) error {
 }
 
 const manageMember = `-- name: ManageMember :exec
-UPDATE workspace_members
-SET role = $1
-WHERE user_id = $2
+UPDATE workspace_members SET role = $1 WHERE user_id = $2
 `
 
 type ManageMemberParams struct {
@@ -597,9 +703,22 @@ func (q *Queries) ManageMember(ctx context.Context, arg ManageMemberParams) erro
 	return err
 }
 
+const moveTaskToColumn = `-- name: MoveTaskToColumn :exec
+UPDATE tasks SET column_id = $1, updated_at = NOW() WHERE task_id = $2
+`
+
+type MoveTaskToColumnParams struct {
+	ColumnID *uuid.UUID
+	TaskID   int32
+}
+
+func (q *Queries) MoveTaskToColumn(ctx context.Context, arg MoveTaskToColumnParams) error {
+	_, err := q.db.Exec(ctx, moveTaskToColumn, arg.ColumnID, arg.TaskID)
+	return err
+}
+
 const removeBlockpoint = `-- name: RemoveBlockpoint :exec
-DELETE FROM task_blockpoints
-WHERE task_id = $1 AND blocked_by_task_id = $2
+DELETE FROM task_blockpoints WHERE task_id = $1 AND blocked_by_task_id = $2
 `
 
 type RemoveBlockpointParams struct {
@@ -622,8 +741,8 @@ func (q *Queries) SetEmailVerified(ctx context.Context, userID uuid.UUID) error 
 }
 
 const updateTask = `-- name: UpdateTask :exec
-UPDATE tasks
-SET title = $2, description = $3, assigned_id = $4, status = $5, updated_at = NOW()
+UPDATE tasks 
+SET title = $2, description = $3, assigned_id = $4, column_id = $5, updated_at = NOW() 
 WHERE task_id = $1
 `
 
@@ -632,7 +751,7 @@ type UpdateTaskParams struct {
 	Title       pgtype.Text
 	Description pgtype.Text
 	AssignedID  *uuid.UUID
-	Status      NullTaskStatus
+	ColumnID    *uuid.UUID
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) error {
@@ -641,7 +760,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) error {
 		arg.Title,
 		arg.Description,
 		arg.AssignedID,
-		arg.Status,
+		arg.ColumnID,
 	)
 	return err
 }
