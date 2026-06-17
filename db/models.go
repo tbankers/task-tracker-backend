@@ -106,6 +106,14 @@ type Board struct {
 	CreatedBy   *uuid.UUID
 }
 
+type EmailVerificationToken struct {
+	TokenID   uuid.UUID
+	UserID    uuid.UUID
+	Token     string
+	ExpiresAt pgtype.Timestamp
+	CreatedAt pgtype.Timestamp
+}
+
 type PasswordResetToken struct {
 	TokenID   uuid.UUID
 	UserID    uuid.UUID
@@ -132,11 +140,12 @@ type TaskBlockpoint struct {
 }
 
 type User struct {
-	UserID       uuid.UUID
-	Email        string
-	Username     string
-	PasswordHash string
-	CreatedAt    pgtype.Timestamp
+	UserID        uuid.UUID
+	Email         string
+	Username      string
+	PasswordHash  string
+	EmailVerified bool
+	CreatedAt     pgtype.Timestamp
 }
 
 type Workspace struct {

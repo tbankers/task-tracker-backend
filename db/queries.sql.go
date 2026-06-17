@@ -98,6 +98,25 @@ func (q *Queries) CreateBoard(ctx context.Context, arg CreateBoardParams) (uuid.
 	return board_id, err
 }
 
+const createEmailVerificationToken = `-- name: CreateEmailVerificationToken :one
+INSERT INTO email_verification_tokens (user_id, token, expires_at)
+VALUES ($1, $2, $3)
+RETURNING token_id
+`
+
+type CreateEmailVerificationTokenParams struct {
+	UserID    uuid.UUID
+	Token     string
+	ExpiresAt pgtype.Timestamp
+}
+
+func (q *Queries) CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createEmailVerificationToken, arg.UserID, arg.Token, arg.ExpiresAt)
+	var token_id uuid.UUID
+	err := row.Scan(&token_id)
+	return token_id, err
+}
+
 const createPasswordResetToken = `-- name: CreatePasswordResetToken :one
 INSERT INTO password_reset_tokens (user_id, token, expires_at)
 VALUES ($1, $2, $3)
@@ -147,8 +166,8 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (int32, 
 const createUser = `-- name: CreateUser :one
 
 
-INSERT INTO users (email, username, password_hash, created_at)
-VALUES($1, $2, $3, NOW())
+INSERT INTO users (email, username, password_hash, email_verified, created_at)
+VALUES($1, $2, $3, FALSE, NOW())
 RETURNING user_id
 `
 
@@ -201,6 +220,26 @@ WHERE board_id = $1
 
 func (q *Queries) DeleteBoard(ctx context.Context, boardID uuid.UUID) error {
 	_, err := q.db.Exec(ctx, deleteBoard, boardID)
+	return err
+}
+
+const deleteEmailVerificationToken = `-- name: DeleteEmailVerificationToken :exec
+DELETE FROM email_verification_tokens
+WHERE token = $1
+`
+
+func (q *Queries) DeleteEmailVerificationToken(ctx context.Context, token string) error {
+	_, err := q.db.Exec(ctx, deleteEmailVerificationToken, token)
+	return err
+}
+
+const deleteEmailVerificationTokensByUserID = `-- name: DeleteEmailVerificationTokensByUserID :exec
+DELETE FROM email_verification_tokens
+WHERE user_id = $1
+`
+
+func (q *Queries) DeleteEmailVerificationTokensByUserID(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteEmailVerificationTokensByUserID, userID)
 	return err
 }
 
@@ -274,6 +313,25 @@ type EditWorkspaceParams struct {
 func (q *Queries) EditWorkspace(ctx context.Context, arg EditWorkspaceParams) error {
 	_, err := q.db.Exec(ctx, editWorkspace, arg.Title, arg.WorkspaceID)
 	return err
+}
+
+const getEmailVerificationToken = `-- name: GetEmailVerificationToken :one
+SELECT token_id, user_id, token, expires_at, created_at
+FROM email_verification_tokens
+WHERE token = $1
+`
+
+func (q *Queries) GetEmailVerificationToken(ctx context.Context, token string) (EmailVerificationToken, error) {
+	row := q.db.QueryRow(ctx, getEmailVerificationToken, token)
+	var i EmailVerificationToken
+	err := row.Scan(
+		&i.TokenID,
+		&i.UserID,
+		&i.Token,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const getMemberRoleById = `-- name: GetMemberRoleById :one
@@ -384,7 +442,7 @@ func (q *Queries) GetTasksFromBoard(ctx context.Context, boardID *uuid.UUID) ([]
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT user_id, email, username, password_hash, created_at
+SELECT user_id, email, username, password_hash, email_verified, created_at
 FROM users
 WHERE email = $1
 `
@@ -397,13 +455,14 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Email,
 		&i.Username,
 		&i.PasswordHash,
+		&i.EmailVerified,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT user_id, email, username, password_hash, created_at
+SELECT user_id, email, username, password_hash, email_verified, created_at
 FROM users
 WHERE user_id = $1
 `
@@ -416,6 +475,7 @@ func (q *Queries) GetUserById(ctx context.Context, userID uuid.UUID) (User, erro
 		&i.Email,
 		&i.Username,
 		&i.PasswordHash,
+		&i.EmailVerified,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -549,6 +609,15 @@ type RemoveBlockpointParams struct {
 
 func (q *Queries) RemoveBlockpoint(ctx context.Context, arg RemoveBlockpointParams) error {
 	_, err := q.db.Exec(ctx, removeBlockpoint, arg.TaskID, arg.BlockedByTaskID)
+	return err
+}
+
+const setEmailVerified = `-- name: SetEmailVerified :exec
+UPDATE users SET email_verified = TRUE WHERE user_id = $1
+`
+
+func (q *Queries) SetEmailVerified(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, setEmailVerified, userID)
 	return err
 }
 

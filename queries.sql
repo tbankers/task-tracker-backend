@@ -2,19 +2,22 @@
 
 
 -- name: CreateUser :one
-INSERT INTO users (email, username, password_hash, created_at)
-VALUES($1, $2, $3, NOW())
+INSERT INTO users (email, username, password_hash, email_verified, created_at)
+VALUES($1, $2, $3, FALSE, NOW())
 RETURNING user_id;
 
 -- name: GetUserById :one
-SELECT user_id, email, username, password_hash, created_at
+SELECT user_id, email, username, password_hash, email_verified, created_at
 FROM users
 WHERE user_id = $1;
 
 -- name: GetUserByEmail :one
-SELECT user_id, email, username, password_hash, created_at
+SELECT user_id, email, username, password_hash, email_verified, created_at
 FROM users
 WHERE email = $1;
+
+-- name: SetEmailVerified :exec
+UPDATE users SET email_verified = TRUE WHERE user_id = $1;
 
 -- name: ChangePassword :exec
 UPDATE users 
@@ -145,3 +148,21 @@ WHERE task_id = $1 AND blocked_by_task_id = $2;
 -- name: DeleteAllBlockpointsForTask :exec
 DELETE FROM task_blockpoints
 WHERE task_id = $1;
+
+-- name: CreateEmailVerificationToken :one
+INSERT INTO email_verification_tokens (user_id, token, expires_at)
+VALUES ($1, $2, $3)
+RETURNING token_id;
+
+-- name: GetEmailVerificationToken :one
+SELECT token_id, user_id, token, expires_at, created_at
+FROM email_verification_tokens
+WHERE token = $1;
+
+-- name: DeleteEmailVerificationToken :exec
+DELETE FROM email_verification_tokens
+WHERE token = $1;
+
+-- name: DeleteEmailVerificationTokensByUserID :exec
+DELETE FROM email_verification_tokens
+WHERE user_id = $1;
