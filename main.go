@@ -287,18 +287,6 @@ func renderEmail(content string) string {
 	return tmpl
 }
 
-func passwordResetEmailHTML(email, link string) string {
-	content := fmt.Sprintf(`<tr><td style="padding:40px;">
-<h2 style="color:#1E293B;font-size:20px;margin:0 0 8px;">Сброс пароля</h2>
-<p style="color:#64748B;font-size:14px;line-height:1.6;margin:0 0 24px;">Мы получили запрос на сброс пароля для аккаунта <strong>%s</strong>. Нажмите кнопку ниже, чтобы задать новый пароль.</p>
-<table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr><td style="background:linear-gradient(135deg,#7C3AED,#4338CA);border-radius:8px;">
-<a href="%s" style="display:inline-block;padding:14px 32px;color:#fff;font-size:15px;font-weight:600;text-decoration:none;">Сбросить пароль</a>
-</td></tr></table>
-<p style="color:#94A3B8;font-size:12px;margin:28px 0 0;line-height:1.6;">Ссылка действительна в течение 1 часа. Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</p>
-</td></tr>`, escHTML(email), link)
-	return renderEmail(content)
-}
-
 func passwordChangedEmailHTML(email string) string {
 	content := fmt.Sprintf(`<tr><td style="padding:40px;">
 <h2 style="color:#1E293B;font-size:20px;margin:0 0 8px;">Пароль изменён</h2>
