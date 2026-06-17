@@ -266,6 +266,52 @@ func jsonWrite(w http.ResponseWriter, status int, v interface{}) {
 
 // --- Auth handlers ---
 
+<<<<<<< Updated upstream
+=======
+const emailBaseTemplate = `<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#F1F5F9;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:40px 20px;">
+<tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
+{{.Content}}
+</table>
+<p style="color:#94A3B8;font-size:12px;margin-top:20px;">Task Tracker &middot; Управление задачами</p>
+</td></tr></table>
+</body></html>`
+
+const emailHeaderBlock = `<tr><td style="background:linear-gradient(135deg,#1E1B4B,#312E81,#4C1D95);padding:32px 40px;text-align:center;">
+<h1 style="color:#fff;font-size:22px;margin:0;font-weight:700;">Task<span style="color:#8B5CF6">Tracker</span></h1>
+</td></tr>`
+
+func renderEmail(content string) string {
+	tmpl := emailBaseTemplate
+	tmpl = strings.Replace(tmpl, "{{.Content}}", emailHeaderBlock+content, 1)
+	return tmpl
+}
+
+func passwordResetEmailHTML(email, link string) string {
+	content := fmt.Sprintf(`<tr><td style="padding:40px;">
+<h2 style="color:#1E293B;font-size:20px;margin:0 0 8px;">Сброс пароля</h2>
+<p style="color:#64748B;font-size:14px;line-height:1.6;margin:0 0 24px;">Мы получили запрос на сброс пароля для аккаунта <strong>%s</strong>. Нажмите кнопку ниже, чтобы задать новый пароль.</p>
+<table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr><td style="background:linear-gradient(135deg,#7C3AED,#4338CA);border-radius:8px;">
+<a href="%s" style="display:inline-block;padding:14px 32px;color:#fff;font-size:15px;font-weight:600;text-decoration:none;">Сбросить пароль</a>
+</td></tr></table>
+<p style="color:#94A3B8;font-size:12px;margin:28px 0 0;line-height:1.6;">Ссылка действительна в течение 1 часа. Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</p>
+</td></tr>`, escHTML(email), link)
+	return renderEmail(content)
+}
+
+func escHTML(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, `"`, "&quot;")
+	return s
+}
+
+>>>>>>> Stashed changes
 func (s *TaskTrackerServer) Register(w http.ResponseWriter, r *http.Request) {
 	var body api.RegisterJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
