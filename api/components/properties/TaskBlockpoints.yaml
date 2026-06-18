@@ -1,0 +1,9 @@
+type: object
+properties:
+  task_id:
+    type: integer
+  blocked_by:
+    description: List of task IDs that must be completed before this task
+    type: array
+    items:
+      type: integer

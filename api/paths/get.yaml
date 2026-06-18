@@ -1,0 +1,18 @@
+operationId: getBoardColumns
+summary: Get all columns for a board
+parameters:
+  - name: board_id
+    in: path
+    required: true
+    schema:
+      type: string
+      format: uuid
+responses:
+  '200':
+    description: success
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            $ref: ../components/schemas/Column.yaml

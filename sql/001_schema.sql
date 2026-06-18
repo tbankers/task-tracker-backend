@@ -10,6 +10,7 @@ CREATE TABLE users (
     email TEXT NOT NULL UNIQUE, 
     username TEXT NOT NULL, 
     password_hash TEXT NOT NULL, 
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ); 
 
@@ -62,6 +63,18 @@ CREATE TABLE password_reset_tokens (
 
 CREATE INDEX idx_password_reset_tokens_token ON password_reset_tokens(token);
 CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
+
+--email verification tokens
+CREATE TABLE email_verification_tokens (
+    token_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_email_verification_tokens_token ON email_verification_tokens(token);
+CREATE INDEX idx_email_verification_tokens_user_id ON email_verification_tokens(user_id);
 
 --task_blockpoints (task dependencies: blocked_task cannot be done until blocker_task is done)
 CREATE TABLE task_blockpoints (
