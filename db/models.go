@@ -103,6 +103,8 @@ type Task struct {
 	AssignedID  *uuid.UUID
 	Title       pgtype.Text
 	Description pgtype.Text
+	StartDate   pgtype.Date
+	DueDate     pgtype.Date
 	ColumnID    *uuid.UUID
 }
 

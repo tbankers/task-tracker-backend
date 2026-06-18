@@ -16,6 +16,25 @@ patch:
           properties:
             status:
               $ref: ../components/schemas/TaskStatus.yaml
+            title:
+              type: string
+            description:
+              type: string
+            column_id:
+              type: string
+              format: uuid
+            assigned_id:
+              type: string
+              format: uuid
+              nullable: true
+            start_date:
+              type: string
+              format: date
+              nullable: true
+            due_date:
+              type: string
+              format: date
+              nullable: true
           required:
             - status
   responses:

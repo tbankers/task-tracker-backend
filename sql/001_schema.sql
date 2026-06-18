@@ -49,7 +49,9 @@ CREATE TABLE tasks (
     assigned_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
     title TEXT, 
     description TEXT, 
-    status task_status DEFAULT 'to_do' 
+    status task_status DEFAULT 'to_do',
+    start_date DATE,
+    due_date DATE
 ); 
 
 --password reset tokens

@@ -932,6 +932,12 @@ func (s *TaskTrackerServer) GetTasksFromBoard(w http.ResponseWriter, r *http.Req
 		} else {
 			task["blocked_by"] = []int32{}
 		}
+		if t.StartDate.Valid {
+			task["start_date"] = t.StartDate.Time.Format("2006-01-02")
+		}
+		if t.DueDate.Valid {
+			task["due_date"] = t.DueDate.Time.Format("2006-01-02")
+		}
 
 		response = append(response, task)
 	}
@@ -940,10 +946,12 @@ func (s *TaskTrackerServer) GetTasksFromBoard(w http.ResponseWriter, r *http.Req
 
 func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
 	var body struct {
-		Title       string     `json:"title"`
-		Description string     `json:"description"`
-		ColumnID    *uuid.UUID `json:"column_id"`
-		AssignedID  *uuid.UUID `json:"assigned_id"`
+		Title       string      `json:"title"`
+		Description string      `json:"description"`
+		ColumnID    *uuid.UUID  `json:"column_id"`
+		AssignedID  *uuid.UUID  `json:"assigned_id"`
+		StartDate   *string     `json:"start_date"`
+		DueDate     *string     `json:"due_date"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
@@ -955,12 +963,28 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 		u := uuid.MustParse(userIDStr)
 		createdBy = &u
 	}
+	var startDate pgtype.Date
+	if body.StartDate != nil && *body.StartDate != "" {
+		t, err := time.Parse("2006-01-02", *body.StartDate)
+		if err == nil {
+			startDate = pgtype.Date{Time: t, Valid: true}
+		}
+	}
+	var dueDate pgtype.Date
+	if body.DueDate != nil && *body.DueDate != "" {
+		t, err := time.Parse("2006-01-02", *body.DueDate)
+		if err == nil {
+			dueDate = pgtype.Date{Time: t, Valid: true}
+		}
+	}
 	taskID, err := s.Queries.CreateTask(r.Context(), db.CreateTaskParams{
 		ColumnID:    body.ColumnID,
 		CreatedBy:   createdBy,
 		Title:       pgtype.Text{String: body.Title, Valid: true},
 		Description: pgtype.Text{String: body.Description, Valid: body.Description != ""},
 		AssignedID:  body.AssignedID,
+		StartDate:   startDate,
+		DueDate:     dueDate,
 	})
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
@@ -978,6 +1002,12 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 	if body.ColumnID != nil {
 		resp["column_id"] = body.ColumnID
 	}
+	if startDate.Valid {
+		resp["start_date"] = startDate.Time.Format("2006-01-02")
+	}
+	if dueDate.Valid {
+		resp["due_date"] = dueDate.Time.Format("2006-01-02")
+	}
 	jsonWrite(w, http.StatusCreated, resp)
 }
 
@@ -987,6 +1017,8 @@ func (s *TaskTrackerServer) ChangeTaskStatus(w http.ResponseWriter, r *http.Requ
 		Description *string    `json:"description"`
 		AssignedID  *uuid.UUID `json:"assigned_id"`
 		ColumnID    *uuid.UUID `json:"column_id"`
+		StartDate   *string    `json:"start_date"`
+		DueDate     *string    `json:"due_date"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
@@ -1003,6 +1035,18 @@ func (s *TaskTrackerServer) ChangeTaskStatus(w http.ResponseWriter, r *http.Requ
 	}
 	params.AssignedID = body.AssignedID
 	params.ColumnID = body.ColumnID
+	if body.StartDate != nil && *body.StartDate != "" {
+		t, err := time.Parse("2006-01-02", *body.StartDate)
+		if err == nil {
+			params.StartDate = pgtype.Date{Time: t, Valid: true}
+		}
+	}
+	if body.DueDate != nil && *body.DueDate != "" {
+		t, err := time.Parse("2006-01-02", *body.DueDate)
+		if err == nil {
+			params.DueDate = pgtype.Date{Time: t, Valid: true}
+		}
+	}
 	err := s.Queries.UpdateTask(r.Context(), params)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())

@@ -121,8 +121,8 @@ DELETE FROM columns WHERE column_id = $1;
 -- =========================================================================
 
 -- name: CreateTask :one
-INSERT INTO tasks (column_id, created_by, title, description, assigned_id) 
-VALUES($1, $2, $3, $4, $5) 
+INSERT INTO tasks (column_id, created_by, title, description, assigned_id, start_date, due_date) 
+VALUES($1, $2, $3, $4, $5, $6, $7) 
 RETURNING task_id;
 
 -- name: MoveTaskToColumn :exec
@@ -130,7 +130,7 @@ UPDATE tasks SET column_id = $1, updated_at = NOW() WHERE task_id = $2;
 
 -- name: UpdateTask :exec
 UPDATE tasks 
-SET title = $2, description = $3, assigned_id = $4, column_id = $5, updated_at = NOW() 
+SET title = $2, description = $3, assigned_id = $4, column_id = $5, start_date = $6, due_date = $7, updated_at = NOW() 
 WHERE task_id = $1;
 
 -- name: DeleteTask :exec
@@ -138,7 +138,7 @@ DELETE FROM tasks WHERE task_id = $1;
 
 -- name: GetTasksFromBoard :many
 -- Uses a JOIN to fetch all tasks for a board now that board_id is gone from tasks table
-SELECT t.task_id, t.column_id, t.created_at, t.created_by, t.updated_at, t.assigned_id, t.title, t.description
+SELECT t.task_id, t.column_id, t.created_at, t.created_by, t.updated_at, t.assigned_id, t.title, t.description, t.start_date, t.due_date
 FROM tasks t
 JOIN columns c ON t.column_id = c.column_id
 WHERE c.board_id = $1 

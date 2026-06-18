@@ -182,8 +182,8 @@ func (q *Queries) CreatePasswordResetToken(ctx context.Context, arg CreatePasswo
 
 const createTask = `-- name: CreateTask :one
 
-INSERT INTO tasks (column_id, created_by, title, description, assigned_id) 
-VALUES($1, $2, $3, $4, $5) 
+INSERT INTO tasks (column_id, created_by, title, description, assigned_id, start_date, due_date) 
+VALUES($1, $2, $3, $4, $5, $6, $7) 
 RETURNING task_id
 `
 
@@ -193,6 +193,8 @@ type CreateTaskParams struct {
 	Title       pgtype.Text
 	Description pgtype.Text
 	AssignedID  *uuid.UUID
+	StartDate   pgtype.Date
+	DueDate     pgtype.Date
 }
 
 // =========================================================================
@@ -205,6 +207,8 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (int32, 
 		arg.Title,
 		arg.Description,
 		arg.AssignedID,
+		arg.StartDate,
+		arg.DueDate,
 	)
 	var task_id int32
 	err := row.Scan(&task_id)
@@ -590,7 +594,7 @@ func (q *Queries) GetTaskBlockpoints(ctx context.Context, taskID int32) ([]int32
 }
 
 const getTasksFromBoard = `-- name: GetTasksFromBoard :many
-SELECT t.task_id, t.column_id, t.created_at, t.created_by, t.updated_at, t.assigned_id, t.title, t.description
+SELECT t.task_id, t.column_id, t.created_at, t.created_by, t.updated_at, t.assigned_id, t.title, t.description, t.start_date, t.due_date
 FROM tasks t
 JOIN columns c ON t.column_id = c.column_id
 WHERE c.board_id = $1 
@@ -606,6 +610,8 @@ type GetTasksFromBoardRow struct {
 	AssignedID  *uuid.UUID
 	Title       pgtype.Text
 	Description pgtype.Text
+	StartDate   pgtype.Date
+	DueDate     pgtype.Date
 }
 
 // Uses a JOIN to fetch all tasks for a board now that board_id is gone from tasks table
@@ -627,6 +633,8 @@ func (q *Queries) GetTasksFromBoard(ctx context.Context, boardID uuid.UUID) ([]G
 			&i.AssignedID,
 			&i.Title,
 			&i.Description,
+			&i.StartDate,
+			&i.DueDate,
 		); err != nil {
 			return nil, err
 		}
@@ -934,7 +942,7 @@ func (q *Queries) UpdateComment(ctx context.Context, arg UpdateCommentParams) er
 
 const updateTask = `-- name: UpdateTask :exec
 UPDATE tasks 
-SET title = $2, description = $3, assigned_id = $4, column_id = $5, updated_at = NOW() 
+SET title = $2, description = $3, assigned_id = $4, column_id = $5, start_date = $6, due_date = $7, updated_at = NOW() 
 WHERE task_id = $1
 `
 
@@ -944,6 +952,8 @@ type UpdateTaskParams struct {
 	Description pgtype.Text
 	AssignedID  *uuid.UUID
 	ColumnID    *uuid.UUID
+	StartDate   pgtype.Date
+	DueDate     pgtype.Date
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) error {
@@ -953,6 +963,8 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) error {
 		arg.Description,
 		arg.AssignedID,
 		arg.ColumnID,
+		arg.StartDate,
+		arg.DueDate,
 	)
 	return err
 }

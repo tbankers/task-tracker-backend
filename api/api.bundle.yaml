@@ -367,6 +367,31 @@ paths:
       tags:
         - workspaces
   /workspaces/{workspace_id}/workspace_members:
+    get:
+      operationId: listMembers
+      summary: list all members of a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Got members successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Member'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - members
     post:
       operationId: addMember
       summary: add member to workspace
@@ -820,6 +845,23 @@ paths:
               properties:
                 title:
                   type: string
+                description:
+                  type: string
+                column_id:
+                  type: string
+                  format: uuid
+                assigned_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                start_date:
+                  type: string
+                  format: date
+                  nullable: true
+                due_date:
+                  type: string
+                  format: date
+                  nullable: true
               required:
                 - title
       responses:
@@ -881,6 +923,25 @@ paths:
               properties:
                 status:
                   $ref: '#/components/schemas/TaskStatus'
+                title:
+                  type: string
+                description:
+                  type: string
+                column_id:
+                  type: string
+                  format: uuid
+                assigned_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                start_date:
+                  type: string
+                  format: date
+                  nullable: true
+                due_date:
+                  type: string
+                  format: date
+                  nullable: true
               required:
                 - status
       responses:
@@ -1142,6 +1203,10 @@ components:
           format: uuid
         role:
           $ref: '#/components/schemas/MemberRole'
+        username:
+          type: string
+        email:
+          type: string
     Board:
       type: object
       properties:
@@ -1227,6 +1292,14 @@ components:
         updated_at:
           type: string
           format: date-time
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        due_date:
+          type: string
+          format: date
+          nullable: true
         blocked_by:
           type: array
           items:

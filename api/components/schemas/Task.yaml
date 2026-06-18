@@ -27,6 +27,14 @@ properties:
   updated_at:
     type: string
     format: date-time
+  start_date:
+    type: string
+    format: date
+    nullable: true
+  due_date:
+    type: string
+    format: date
+    nullable: true
   blocked_by:
     type: array
     items:
