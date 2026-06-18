@@ -1,0 +1,63 @@
+patch:
+  operationId: updateBoardComment
+  summary: Update a comment
+  parameters:
+    - name: board_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    - name: comment_id
+      in: path
+      required: true
+      schema:
+        type: integer
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            content:
+              type: string
+          required:
+            - content
+  responses:
+    '200':
+      description: Comment updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Comment.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    '500':
+      $ref: ../components/responses/InternalServerError.yaml
+  tags:
+    - comments
+delete:
+  operationId: deleteBoardComment
+  summary: Delete a comment
+  parameters:
+    - name: board_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    - name: comment_id
+      in: path
+      required: true
+      schema:
+        type: integer
+  responses:
+    '204':
+      description: Deleted
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    '500':
+      $ref: ../components/responses/InternalServerError.yaml
+  tags:
+    - comments

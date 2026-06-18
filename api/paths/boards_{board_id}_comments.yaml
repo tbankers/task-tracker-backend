@@ -1,0 +1,59 @@
+get:
+  operationId: getBoardComments
+  summary: Get comments for a board
+  parameters:
+    - name: board_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: success
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Comment.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    '500':
+      $ref: ../components/responses/InternalServerError.yaml
+  tags:
+    - comments
+post:
+  operationId: createBoardComment
+  summary: Create a comment on a board
+  parameters:
+    - name: board_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            content:
+              type: string
+          required:
+            - content
+  responses:
+    '201':
+      description: Comment created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Comment.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    '500':
+      $ref: ../components/responses/InternalServerError.yaml
+  tags:
+    - comments

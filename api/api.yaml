@@ -32,6 +32,10 @@ paths:
     $ref: paths/workspaces_{workspace_id}_boards.yaml
   /boards/{board_id}:
     $ref: paths/boards_{board_id}.yaml
+  /boards/{board_id}/comments:
+    $ref: paths/boards_{board_id}_comments.yaml
+  /boards/{board_id}/comments/{comment_id}:
+    $ref: paths/boards_{board_id}_comments_{comment_id}.yaml
   /boards/{board_id}/columns:
     $ref: paths/boards_{board_id}_columns.yaml
   get:
@@ -70,6 +74,8 @@ components:
       $ref: components/schemas/Boards.yaml
     Column:
       $ref: components/schemas/Column.yaml
+    Comment:
+      $ref: components/schemas/Comment.yaml
   properties:
     id:
       $ref: components/properties/id.yaml

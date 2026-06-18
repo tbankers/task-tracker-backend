@@ -626,216 +626,78 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       tags:
         - boards
-  /boards/{board_id}/columns:
-  get:
-    operationId: getBoardColumns
-    summary: Get all columns for a board
-    parameters:
-      - name: board_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-    responses:
-      '200':
-        description: success
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/Column'
-  post:
-    operationId: createColumn
-    summary: Create a new column
-    parameters:
-      - name: board_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              name:
-                type: string
-              position:
-                type: integer
-            required:
-              - name
-    responses:
-      '201':
-        description: Column created
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Column'
-
-/columns/{column_id}:
-  delete:
-    operationId: deleteColumn
-    summary: Delete a column
-    parameters:
-      - name: column_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-    responses:
-      '204':
-        description: Deleted
-
-/columns/{column_id}/tasks:
-  get:
-    operationId: getColumnTasks
-    summary: Get tasks in a column
-    parameters:
-      - name: column_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-    responses:
-      '200':
-        description: success
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/Task'
-  post:
-    operationId: createTask
-    summary: Create a task in a column
-    parameters:
-      - name: column_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              name:
-                type: string
-              description:
-                type: string
-              assigned_id:
-                type: string
-                format: uuid
-                nullable: true
-            required:
-              - name
-    responses:
-      '201':
-        description: Task created
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Task'
-  /tasks/{task_id}:
-    patch:
-      operationId: changeTaskStatus
-      summary: change task status
-      parameters:
-        - name: task_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        content:
-          application/json:
-        schema:
-          type: object
-          properties:
-            name:
-              type: string
-            description:
-              type: string
-            column_id:
-              type: string
-              format: uuid
-            assigned_id:
-              type: string
-              format: uuid
-              nullable: true
-      responses:
-        '200':
-          description: Changed task status successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Task'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      tags:
-        - tasks
-    delete:
-      operationId: deleteTask
-      summary: delete task
-      parameters:
-        - name: task_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '204':
-          description: Deleted task successfully
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      tags:
-        - tasks
-  /tasks/{task_id}/blockpoints:
+  /boards/{board_id}/comments:
     get:
-      operationId: getTaskBlockpoints
-      summary: get task blockpoints
+      operationId: getBoardComments
+      summary: Get comments for a board
       parameters:
-        - name: task_id
+        - name: board_id
           in: path
           required: true
           schema:
-            type: integer
+            type: string
+            format: uuid
       responses:
         '200':
-          description: Got task blockpoints successfully
+          description: success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskBlockpoints'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
       tags:
-        - blockpoints
+        - comments
     post:
-      operationId: addBlockpoint
-      summary: add blockpoint to task
+      operationId: createBoardComment
+      summary: Create a comment on a board
       parameters:
-        - name: task_id
+        - name: board_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+              required:
+                - content
+      responses:
+        '201':
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - comments
+  /boards/{board_id}/comments/{comment_id}:
+    patch:
+      operationId: updateBoardComment
+      summary: Update a comment
+      parameters:
+        - name: board_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: comment_id
           in: path
           required: true
           schema:
@@ -847,50 +709,52 @@ paths:
             schema:
               type: object
               properties:
-                blocked_by_task_id:
-                  type: integer
+                content:
+                  type: string
               required:
-                - blocked_by_task_id
+                - content
       responses:
-        '201':
-          description: Added blockpoint successfully
+        '200':
+          description: Comment updated
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
+                $ref: '#/components/schemas/Comment'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
       tags:
-        - blockpoints
-  /tasks/{task_id}/blockpoints/{blocked_by_task_id}:
+        - comments
     delete:
-      operationId: removeBlockpoint
-      summary: remove blockpoint from task
+      operationId: deleteBoardComment
+      summary: Delete a comment
       parameters:
-        - name: task_id
+        - name: board_id
           in: path
           required: true
           schema:
-            type: integer
-        - name: blocked_by_task_id
+            type: string
+            format: uuid
+        - name: comment_id
           in: path
           required: true
           schema:
             type: integer
       responses:
         '204':
-          description: Removed blockpoint successfully
+          description: Deleted
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
       tags:
-        - blockpoints
+        - comments
+  /boards/{board_id}/columns: null
+  get:
+    $ref: paths/get.yaml
+  post:
+    $ref: paths/post.yaml
 components:
   schemas:
     RegisterRequest:
@@ -1040,68 +904,41 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Board'
-    Column:
-  type: object
+    Column: null
+    Comment:
+      type: object
+      properties:
+        comment_id:
+          type: integer
+        board_id:
+          type: string
+          format: uuid
+        author_id:
+          type: string
+          format: uuid
+          nullable: true
+        content:
+          type: string
+        sent_at:
+          type: string
+          format: date-time
   properties:
     id:
-      type: string
-      format: uuid
+      $ref: components/properties/id.yaml
     board_id:
-      type: string
-      format: uuid
+      $ref: components/properties/board_id.yaml
     name:
-      type: string
+      $ref: components/properties/name.yaml
     position:
-      type: integer
+      $ref: components/properties/position.yaml
     created_at:
-      type: string
-      format: date-time
+      $ref: components/properties/created_at.yaml
     Task:
-      type: object
-      properties:
-        id:
-          type: integer
-        column_id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        description:
-          type: string
-          nullable: true
-        assigned_id:
-          type: string
-          format: uuid
-          nullable: true
-        created_by:
-          type: string
-          format: uuid
-          nullable: true
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-        blocked_by:
-          description: List of task IDs that must be completed before this task
-          type: array
-          items:
-            type: integer
+      $ref: components/properties/Task.yaml
     Tasks:
-      type: array
-      items:
-        $ref: '#/components/schemas/Task'
+      $ref: components/properties/Tasks.yaml
     TaskBlockpoints:
-      type: object
-      properties:
-        task_id:
-          type: integer
-        blocked_by:
-          description: List of task IDs that must be completed before this task
-          type: array
-          items:
-            type: integer
+      $ref: components/properties/TaskBlockpoints.yaml
   responses:
     BadRequest:
       description: Невалидные входные данные или неверный формат UUID
@@ -1121,3 +958,217 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+  type: object
+/columns/{column_id}:
+  delete:
+    operationId: deleteColumn
+    summary: Delete a column
+    parameters:
+      - name: column_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '204':
+        description: Deleted
+/columns/{column_id}/tasks:
+  get:
+    operationId: getColumnTasks
+    summary: Get tasks in a column
+    parameters:
+      - name: column_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: success
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Task'
+  post:
+    operationId: createTask
+    summary: Create a task in a column
+    parameters:
+      - name: column_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              assigned_id:
+                type: string
+                format: uuid
+                nullable: true
+            required:
+              - name
+    responses:
+      '201':
+        description: Task created
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+  /tasks/{task_id}:
+    patch:
+      operationId: changeTaskStatus
+      summary: change task status
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json: null
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+            description:
+              type: string
+            column_id:
+              type: string
+              format: uuid
+            assigned_id:
+              type: string
+              format: uuid
+              nullable: true
+      responses:
+        '200':
+          description: Changed task status successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - tasks
+    delete:
+      operationId: deleteTask
+      summary: delete task
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted task successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - tasks
+  /tasks/{task_id}/blockpoints:
+    get:
+      operationId: getTaskBlockpoints
+      summary: get task blockpoints
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Got task blockpoints successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskBlockpoints'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - blockpoints
+    post:
+      operationId: addBlockpoint
+      summary: add blockpoint to task
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                blocked_by_task_id:
+                  type: integer
+              required:
+                - blocked_by_task_id
+      responses:
+        '201':
+          description: Added blockpoint successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - blockpoints
+  /tasks/{task_id}/blockpoints/{blocked_by_task_id}:
+    delete:
+      operationId: removeBlockpoint
+      summary: remove blockpoint from task
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: blocked_by_task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Removed blockpoint successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+        - blockpoints

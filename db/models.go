@@ -71,6 +71,14 @@ type Column struct {
 	CreatedAt pgtype.Timestamp
 }
 
+type Comment struct {
+	CommentID int32
+	BoardID   *uuid.UUID
+	AuthorID  *uuid.UUID
+	SentAt    pgtype.Timestamp
+	Content   pgtype.Text
+}
+
 type EmailVerificationToken struct {
 	TokenID   uuid.UUID
 	UserID    uuid.UUID

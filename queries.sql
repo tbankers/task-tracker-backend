@@ -183,3 +183,32 @@ DELETE FROM email_verification_tokens WHERE token = $1;
 
 -- name: DeleteEmailVerificationTokensByUserID :exec
 DELETE FROM email_verification_tokens WHERE user_id = $1;
+
+-- =========================================================================
+-- COMMENTS CRUD
+-- =========================================================================
+
+-- name: CreateComment :one
+INSERT INTO comments (board_id, author_id, content)
+VALUES ($1, $2, $3)
+RETURNING comment_id, board_id, author_id, sent_at, content;
+
+-- name: GetCommentsByBoard :many
+SELECT comment_id, board_id, author_id, sent_at, content
+FROM comments
+WHERE board_id = $1
+ORDER BY sent_at ASC;
+
+-- name: GetCommentById :one
+SELECT comment_id, board_id, author_id, sent_at, content
+FROM comments
+WHERE comment_id = $1;
+
+-- name: UpdateComment :exec
+UPDATE comments SET content = $1 WHERE comment_id = $2;
+
+-- name: DeleteComment :exec
+DELETE FROM comments WHERE comment_id = $1;
+
+-- name: DeleteCommentsByBoard :exec
+DELETE FROM comments WHERE board_id = $1;

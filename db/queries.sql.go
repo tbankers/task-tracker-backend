@@ -109,6 +109,35 @@ func (q *Queries) CreateColumn(ctx context.Context, arg CreateColumnParams) (Col
 	return i, err
 }
 
+const createComment = `-- name: CreateComment :one
+
+INSERT INTO comments (board_id, author_id, content)
+VALUES ($1, $2, $3)
+RETURNING comment_id, board_id, author_id, sent_at, content
+`
+
+type CreateCommentParams struct {
+	BoardID  *uuid.UUID
+	AuthorID *uuid.UUID
+	Content  pgtype.Text
+}
+
+// =========================================================================
+// COMMENTS CRUD
+// =========================================================================
+func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error) {
+	row := q.db.QueryRow(ctx, createComment, arg.BoardID, arg.AuthorID, arg.Content)
+	var i Comment
+	err := row.Scan(
+		&i.CommentID,
+		&i.BoardID,
+		&i.AuthorID,
+		&i.SentAt,
+		&i.Content,
+	)
+	return i, err
+}
+
 const createEmailVerificationToken = `-- name: CreateEmailVerificationToken :one
 INSERT INTO email_verification_tokens (user_id, token, expires_at) 
 VALUES ($1, $2, $3) 
@@ -248,6 +277,24 @@ func (q *Queries) DeleteColumn(ctx context.Context, columnID uuid.UUID) error {
 	return err
 }
 
+const deleteComment = `-- name: DeleteComment :exec
+DELETE FROM comments WHERE comment_id = $1
+`
+
+func (q *Queries) DeleteComment(ctx context.Context, commentID int32) error {
+	_, err := q.db.Exec(ctx, deleteComment, commentID)
+	return err
+}
+
+const deleteCommentsByBoard = `-- name: DeleteCommentsByBoard :exec
+DELETE FROM comments WHERE board_id = $1
+`
+
+func (q *Queries) DeleteCommentsByBoard(ctx context.Context, boardID *uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteCommentsByBoard, boardID)
+	return err
+}
+
 const deleteEmailVerificationToken = `-- name: DeleteEmailVerificationToken :exec
 DELETE FROM email_verification_tokens WHERE token = $1
 `
@@ -369,6 +416,58 @@ func (q *Queries) GetColumnsFromBoard(ctx context.Context, boardID uuid.UUID) ([
 			&i.Name,
 			&i.Position,
 			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getCommentById = `-- name: GetCommentById :one
+SELECT comment_id, board_id, author_id, sent_at, content
+FROM comments
+WHERE comment_id = $1
+`
+
+func (q *Queries) GetCommentById(ctx context.Context, commentID int32) (Comment, error) {
+	row := q.db.QueryRow(ctx, getCommentById, commentID)
+	var i Comment
+	err := row.Scan(
+		&i.CommentID,
+		&i.BoardID,
+		&i.AuthorID,
+		&i.SentAt,
+		&i.Content,
+	)
+	return i, err
+}
+
+const getCommentsByBoard = `-- name: GetCommentsByBoard :many
+SELECT comment_id, board_id, author_id, sent_at, content
+FROM comments
+WHERE board_id = $1
+ORDER BY sent_at ASC
+`
+
+func (q *Queries) GetCommentsByBoard(ctx context.Context, boardID *uuid.UUID) ([]Comment, error) {
+	rows, err := q.db.Query(ctx, getCommentsByBoard, boardID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Comment
+	for rows.Next() {
+		var i Comment
+		if err := rows.Scan(
+			&i.CommentID,
+			&i.BoardID,
+			&i.AuthorID,
+			&i.SentAt,
+			&i.Content,
 		); err != nil {
 			return nil, err
 		}
@@ -737,6 +836,20 @@ UPDATE users SET email_verified = TRUE WHERE user_id = $1
 
 func (q *Queries) SetEmailVerified(ctx context.Context, userID uuid.UUID) error {
 	_, err := q.db.Exec(ctx, setEmailVerified, userID)
+	return err
+}
+
+const updateComment = `-- name: UpdateComment :exec
+UPDATE comments SET content = $1 WHERE comment_id = $2
+`
+
+type UpdateCommentParams struct {
+	Content   pgtype.Text
+	CommentID int32
+}
+
+func (q *Queries) UpdateComment(ctx context.Context, arg UpdateCommentParams) error {
+	_, err := q.db.Exec(ctx, updateComment, arg.Content, arg.CommentID)
 	return err
 }
 

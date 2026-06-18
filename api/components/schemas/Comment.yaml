@@ -1,0 +1,16 @@
+type: object
+properties:
+  comment_id:
+    type: integer
+  board_id:
+    type: string
+    format: uuid
+  author_id:
+    type: string
+    format: uuid
+    nullable: true
+  content:
+    type: string
+  sent_at:
+    type: string
+    format: date-time
