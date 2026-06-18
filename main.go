@@ -688,6 +688,13 @@ func (s *TaskTrackerServer) CreateWorkspace(w http.ResponseWriter, r *http.Reque
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
 	}
+	if userIDStr != "" {
+		_, _ = s.Queries.AddMember(r.Context(), db.AddMemberParams{
+			UserID:      createdBy,
+			WorkspaceID: wsID,
+			Role:        db.NullMemberRole{MemberRole: db.MemberRoleAdministrator, Valid: true},
+		})
+	}
 	jsonWrite(w, http.StatusCreated, map[string]interface{}{
 		"workspace_id": wsID.String(),
 		"title":        body.Title,

@@ -9,6 +9,7 @@ services:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d:ro
     networks:
       - app_network
     healthcheck:
@@ -22,19 +23,14 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=user
-      - DB_PASSWORD=password
-      - DB_NAME=tasktracker
       - DATABASE_URL=postgres://user:password@db:5432/tasktracker?sslmode=disable
-      - SMTP_HOST=smtp.gmail.com
-      - SMTP_PORT=587
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
       - SMTP_USERNAME=${SMTP_USERNAME}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_FROM=${SMTP_FROM:-${SMTP_USERNAME}}
-      - FRONTEND_URL=${FRONTEND_URL:-https://localhost}
-      - CORS_ORIGIN=${CORS_ORIGIN:-https://localhost}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
     networks:
       - app_network
     depends_on:
@@ -44,7 +40,6 @@ services:
   frontend:
     build: ../task-tracker-frontend
     ports:
-      - "443:443"
       - "80:80"
     networks:
       - app_network
