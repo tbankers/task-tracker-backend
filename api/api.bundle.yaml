@@ -750,11 +750,56 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       tags:
         - comments
-  /boards/{board_id}/columns: null
-  get:
-    $ref: paths/get.yaml
-  post:
-    $ref: paths/post.yaml
+  /boards/{board_id}/columns:
+    get:
+      operationId: getBoardColumns
+      summary: Get all columns for a board
+      parameters:
+        - name: board_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Column'
+    post:
+      operationId: createColumn
+      summary: Create a new column
+      parameters:
+        - name: board_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                position:
+                  type: integer
+              required:
+                - name
+      responses:
+        '201':
+          description: Column created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Column'
 components:
   schemas:
     RegisterRequest:
@@ -904,7 +949,22 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Board'
-    Column: null
+    Column:
+      type: object
+      properties:
+        column_id:
+          type: string
+          format: uuid
+        board_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        position:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
     Comment:
       type: object
       properties:

@@ -357,31 +357,19 @@ func (s *TaskTrackerServer) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	verificationToken, err := generateResetToken()
+	token, err := generateToken(userID.String(), string(body.Email))
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "TOKEN_ERROR", "Ошибка генерации токена")
 		return
 	}
-	expiresAt := pgtype.Timestamp{Time: time.Now().Add(24 * time.Hour), Valid: true}
-	_, err = s.Queries.CreateEmailVerificationToken(r.Context(), db.CreateEmailVerificationTokenParams{
-		UserID:    userID,
-		Token:     verificationToken,
-		ExpiresAt: expiresAt,
-	})
-	if err != nil {
-		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
-		return
-	}
-
-	verifyLink := fmt.Sprintf("%s/#/verify-email?token=%s", getEnv("FRONTEND_URL", "http://localhost:3000"), verificationToken)
-	emailBody := verificationEmailHTML(body.Username, verifyLink)
-
-	if err := sendEmail(string(body.Email), "Подтвердите email — Task Tracker", emailBody); err != nil {
-		fmt.Printf("[EMAIL ERROR] %v\n", err)
-	}
 
 	jsonWrite(w, http.StatusCreated, map[string]interface{}{
-		"message": "Аккаунт создан. Проверьте почту для подтверждения email.",
+		"token": token,
+		"user": map[string]interface{}{
+			"user_id":    userID.String(),
+			"email":      string(body.Email),
+			"username":   body.Username,
+		},
 	})
 }
 
@@ -398,10 +386,6 @@ func (s *TaskTrackerServer) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(body.Password)); err != nil {
 		sendError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Неверный email или пароль")
-		return
-	}
-	if !user.EmailVerified {
-		sendError(w, http.StatusForbidden, "EMAIL_NOT_VERIFIED", "Подтвердите email. Письмо с ссылкой отправлено при регистрации.")
 		return
 	}
 	token, err := generateToken(user.UserID.String(), user.Email)
@@ -1263,8 +1247,6 @@ func main() {
 
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware)
-		r.Post("/auth/verify-email", serverImpl.VerifyEmail)
-		r.Post("/auth/resend-verification", serverImpl.ResendVerification)
 		api.HandlerFromMux(serverImpl, r)
 	})
 
