@@ -896,6 +896,9 @@ func (s *TaskTrackerServer) GetTasksFromBoard(w http.ResponseWriter, r *http.Req
 			"id":       t.TaskID,
 			"board_id": boardId,
 		}
+		if t.ColumnID != nil {
+			task["column_id"] = t.ColumnID
+		}
 		if t.Title.Valid {
 			task["title"] = t.Title.String
 		}
@@ -954,14 +957,18 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 		return
 	}
 	now := time.Now()
-	jsonWrite(w, http.StatusCreated, map[string]interface{}{
+	resp := map[string]interface{}{
 		"id":         taskID,
 		"board_id":   boardId.String(),
 		"title":      body.Title,
 		"created_at": now,
 		"updated_at": now,
 		"blocked_by": []int32{},
-	})
+	}
+	if body.ColumnID != nil {
+		resp["column_id"] = body.ColumnID
+	}
+	jsonWrite(w, http.StatusCreated, resp)
 }
 
 func (s *TaskTrackerServer) ChangeTaskStatus(w http.ResponseWriter, r *http.Request, taskId int) {
