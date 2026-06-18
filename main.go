@@ -834,6 +834,59 @@ func (s *TaskTrackerServer) DeleteBoard(w http.ResponseWriter, r *http.Request, 
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *TaskTrackerServer) GetBoardColumns(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
+	columns, err := s.Queries.GetColumnsFromBoard(r.Context(), boardId)
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
+		return
+	}
+	var response []map[string]interface{}
+	for _, c := range columns {
+		col := map[string]interface{}{
+			"column_id": c.ColumnID.String(),
+			"board_id":  c.BoardID.String(),
+			"name":      c.Name,
+			"position":  c.Position,
+		}
+		if c.CreatedAt.Valid {
+			col["created_at"] = c.CreatedAt.Time
+		}
+		response = append(response, col)
+	}
+	jsonWrite(w, http.StatusOK, response)
+}
+
+func (s *TaskTrackerServer) CreateColumn(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
+	var body api.CreateColumnJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
+		return
+	}
+	position := int32(0)
+	if body.Position != nil {
+		position = int32(*body.Position)
+	}
+	col, err := s.Queries.CreateColumn(r.Context(), db.CreateColumnParams{
+		BoardID:  boardId,
+		Name:     body.Name,
+		Position: position,
+	})
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
+		return
+	}
+	result := map[string]interface{}{
+		"column_id": col.ColumnID.String(),
+		"board_id":  col.BoardID.String(),
+		"name":      col.Name,
+		"position":  col.Position,
+	}
+	if col.CreatedAt.Valid {
+		result["created_at"] = col.CreatedAt.Time
+	}
+	jsonWrite(w, http.StatusCreated, result)
+}
+
 // --- Task handlers ---
 
 func (s *TaskTrackerServer) GetTasksFromBoard(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {

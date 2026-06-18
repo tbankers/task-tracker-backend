@@ -1,1 +1,15 @@
-null
+type: object
+properties:
+  column_id:
+    type: string
+    format: uuid
+  board_id:
+    type: string
+    format: uuid
+  name:
+    type: string
+  position:
+    type: integer
+  created_at:
+    type: string
+    format: date-time

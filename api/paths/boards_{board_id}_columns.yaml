@@ -1,1 +1,49 @@
-null
+get:
+  operationId: getBoardColumns
+  summary: Get all columns for a board
+  parameters:
+    - name: board_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: success
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Column.yaml
+post:
+  operationId: createColumn
+  summary: Create a new column
+  parameters:
+    - name: board_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+            position:
+              type: integer
+          required:
+            - name
+  responses:
+    '201':
+      description: Column created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Column.yaml
