@@ -57,6 +57,24 @@ DELETE FROM workspace_members WHERE user_id = $1;
 -- name: GetMemberRoleById :one
 SELECT role FROM workspace_members WHERE user_id = $1;
 
+-- name: GetWorkspaceMembers :many
+SELECT wm.user_id, wm.workspace_id, wm.role, u.username, u.email
+FROM workspace_members wm
+JOIN users u ON wm.user_id = u.user_id
+WHERE wm.workspace_id = $1
+ORDER BY wm.role DESC, u.username ASC;
+
+-- name: GetAllUserWorkspaces :many
+SELECT w.workspace_id, w.title, w.created_by, w.created_at
+FROM workspaces w
+WHERE w.created_by = $1
+UNION
+SELECT w.workspace_id, w.title, w.created_by, w.created_at
+FROM workspaces w
+JOIN workspace_members wm ON w.workspace_id = wm.workspace_id
+WHERE wm.user_id = $1
+ORDER BY created_at ASC;
+
 -- name: CreateBoard :one
 INSERT INTO boards (title, workspace_id, created_at, created_by) 
 VALUES($1, $2, NOW(), $3) 

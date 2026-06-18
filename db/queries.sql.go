@@ -394,6 +394,43 @@ func (q *Queries) EditWorkspace(ctx context.Context, arg EditWorkspaceParams) er
 	return err
 }
 
+const getAllUserWorkspaces = `-- name: GetAllUserWorkspaces :many
+SELECT w.workspace_id, w.title, w.created_by, w.created_at
+FROM workspaces w
+WHERE w.created_by = $1
+UNION
+SELECT w.workspace_id, w.title, w.created_by, w.created_at
+FROM workspaces w
+JOIN workspace_members wm ON w.workspace_id = wm.workspace_id
+WHERE wm.user_id = $1
+ORDER BY created_at ASC
+`
+
+func (q *Queries) GetAllUserWorkspaces(ctx context.Context, createdBy *uuid.UUID) ([]Workspace, error) {
+	rows, err := q.db.Query(ctx, getAllUserWorkspaces, createdBy)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Workspace
+	for rows.Next() {
+		var i Workspace
+		if err := rows.Scan(
+			&i.WorkspaceID,
+			&i.Title,
+			&i.CreatedBy,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getColumnsFromBoard = `-- name: GetColumnsFromBoard :many
 SELECT column_id, board_id, name, position, created_at
 FROM columns
@@ -777,6 +814,48 @@ func (q *Queries) GetWorkspaceById(ctx context.Context, workspaceID uuid.UUID) (
 		&i.CreatedBy,
 	)
 	return i, err
+}
+
+const getWorkspaceMembers = `-- name: GetWorkspaceMembers :many
+SELECT wm.user_id, wm.workspace_id, wm.role, u.username, u.email
+FROM workspace_members wm
+JOIN users u ON wm.user_id = u.user_id
+WHERE wm.workspace_id = $1
+ORDER BY wm.role DESC, u.username ASC
+`
+
+type GetWorkspaceMembersRow struct {
+	UserID      uuid.UUID
+	WorkspaceID uuid.UUID
+	Role        NullMemberRole
+	Username    string
+	Email       string
+}
+
+func (q *Queries) GetWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID) ([]GetWorkspaceMembersRow, error) {
+	rows, err := q.db.Query(ctx, getWorkspaceMembers, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetWorkspaceMembersRow
+	for rows.Next() {
+		var i GetWorkspaceMembersRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.WorkspaceID,
+			&i.Role,
+			&i.Username,
+			&i.Email,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const kickUser = `-- name: KickUser :exec

@@ -647,7 +647,7 @@ func (s *TaskTrackerServer) ChangePassword(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *TaskTrackerServer) GetUserWorkspace(w http.ResponseWriter, r *http.Request, userId uuid.UUID) {
-	workspaces, err := s.Queries.GetUsersWorkspace(r.Context(), &userId)
+	workspaces, err := s.Queries.GetAllUserWorkspaces(r.Context(), &userId)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
@@ -660,6 +660,9 @@ func (s *TaskTrackerServer) GetUserWorkspace(w http.ResponseWriter, r *http.Requ
 			"created_by":   ws.CreatedBy,
 			"created_at":   ws.CreatedAt.Time,
 		})
+	}
+	if result == nil {
+		result = []map[string]interface{}{}
 	}
 	jsonWrite(w, http.StatusOK, result)
 }
@@ -1195,6 +1198,28 @@ func (s *TaskTrackerServer) AddMember(w http.ResponseWriter, r *http.Request, wo
 		return
 	}
 	jsonWrite(w, http.StatusCreated, map[string]string{"message": "Участник добавлен"})
+}
+
+func (s *TaskTrackerServer) ListMembers(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID) {
+	members, err := s.Queries.GetWorkspaceMembers(r.Context(), workspaceId)
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
+		return
+	}
+	var result []map[string]interface{}
+	for _, m := range members {
+		result = append(result, map[string]interface{}{
+			"user_id":      m.UserID.String(),
+			"workspace_id": m.WorkspaceID.String(),
+			"role":         string(m.Role.MemberRole),
+			"username":     m.Username,
+			"email":        m.Email,
+		})
+	}
+	if result == nil {
+		result = []map[string]interface{}{}
+	}
+	jsonWrite(w, http.StatusOK, result)
 }
 
 func (s *TaskTrackerServer) KickUser(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID, userId uuid.UUID) {

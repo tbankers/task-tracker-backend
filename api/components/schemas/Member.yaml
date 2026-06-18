@@ -8,3 +8,7 @@ properties:
     format: uuid
   role:
     $ref: MemberRole.yaml
+  username:
+    type: string
+  email:
+    type: string
