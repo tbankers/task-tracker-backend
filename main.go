@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
@@ -872,6 +873,15 @@ func (s *TaskTrackerServer) CreateColumn(w http.ResponseWriter, r *http.Request,
 	jsonWrite(w, http.StatusCreated, result)
 }
 
+func (s *TaskTrackerServer) DeleteColumn(w http.ResponseWriter, r *http.Request, columnId openapi_types.UUID) {
+	err := s.Queries.DeleteColumn(r.Context(), columnId)
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // --- Task handlers ---
 
 func (s *TaskTrackerServer) GetTasksFromBoard(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
@@ -954,7 +964,7 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 	})
 }
 
-func (s *TaskTrackerServer) UpdateTask(w http.ResponseWriter, r *http.Request, taskId int) {
+func (s *TaskTrackerServer) ChangeTaskStatus(w http.ResponseWriter, r *http.Request, taskId int) {
 	var body struct {
 		Title       *string    `json:"title"`
 		Description *string    `json:"description"`
