@@ -250,6 +250,7 @@ func generateResetToken() (string, error) {
 }
 
 func sendError(w http.ResponseWriter, statusCode int, code string, msg string) {
+	fmt.Printf("[ERROR] %d %s: %s\n", statusCode, code, msg)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	_ = json.NewEncoder(w).Encode(map[string]string{
