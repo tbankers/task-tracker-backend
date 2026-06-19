@@ -67,7 +67,10 @@ func (s *TaskTrackerServer) ListMembers(w http.ResponseWriter, r *http.Request, 
 }
 
 func (s *TaskTrackerServer) KickUser(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID, userId uuid.UUID) {
-	err := s.Queries.KickUser(r.Context(), userId)
+	err := s.Queries.KickUser(r.Context(), db.KickUserParams{
+		UserID:      userId,
+		WorkspaceID: workspaceId,
+	})
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return

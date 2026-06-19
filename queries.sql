@@ -52,7 +52,7 @@ RETURNING user_id;
 UPDATE workspace_members SET role = $1 WHERE user_id = $2;
 
 -- name: KickUser :exec
-DELETE FROM workspace_members WHERE user_id = $1;
+DELETE FROM workspace_members WHERE user_id = $1 AND workspace_id = $2;
 
 -- name: GetMemberRoleById :one
 SELECT role FROM workspace_members WHERE user_id = $1;
@@ -67,13 +67,9 @@ ORDER BY wm.role DESC, u.username ASC;
 -- name: GetAllUserWorkspaces :many
 SELECT w.workspace_id, w.title, w.created_by, w.created_at
 FROM workspaces w
-WHERE w.created_by = $1
-UNION
-SELECT w.workspace_id, w.title, w.created_by, w.created_at
-FROM workspaces w
 JOIN workspace_members wm ON w.workspace_id = wm.workspace_id
 WHERE wm.user_id = $1
-ORDER BY created_at ASC;
+ORDER BY w.created_at ASC;
 
 -- name: CreateBoard :one
 INSERT INTO boards (title, workspace_id, created_at, created_by) 

@@ -99,7 +99,7 @@ func (s *TaskTrackerServer) ChangePassword(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *TaskTrackerServer) GetUserWorkspace(w http.ResponseWriter, r *http.Request, userId uuid.UUID) {
-	workspaces, err := s.Queries.GetAllUserWorkspaces(r.Context(), &userId)
+	workspaces, err := s.Queries.GetAllUserWorkspaces(r.Context(), userId)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return

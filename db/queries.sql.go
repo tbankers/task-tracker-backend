@@ -401,17 +401,13 @@ func (q *Queries) EditWorkspace(ctx context.Context, arg EditWorkspaceParams) er
 const getAllUserWorkspaces = `-- name: GetAllUserWorkspaces :many
 SELECT w.workspace_id, w.title, w.created_by, w.created_at
 FROM workspaces w
-WHERE w.created_by = $1
-UNION
-SELECT w.workspace_id, w.title, w.created_by, w.created_at
-FROM workspaces w
 JOIN workspace_members wm ON w.workspace_id = wm.workspace_id
 WHERE wm.user_id = $1
-ORDER BY created_at ASC
+ORDER BY w.created_at ASC
 `
 
-func (q *Queries) GetAllUserWorkspaces(ctx context.Context, createdBy *uuid.UUID) ([]Workspace, error) {
-	rows, err := q.db.Query(ctx, getAllUserWorkspaces, createdBy)
+func (q *Queries) GetAllUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]Workspace, error) {
+	rows, err := q.db.Query(ctx, getAllUserWorkspaces, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -867,11 +863,16 @@ func (q *Queries) GetWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID
 }
 
 const kickUser = `-- name: KickUser :exec
-DELETE FROM workspace_members WHERE user_id = $1
+DELETE FROM workspace_members WHERE user_id = $1 AND workspace_id = $2
 `
 
-func (q *Queries) KickUser(ctx context.Context, userID uuid.UUID) error {
-	_, err := q.db.Exec(ctx, kickUser, userID)
+type KickUserParams struct {
+	UserID      uuid.UUID
+	WorkspaceID uuid.UUID
+}
+
+func (q *Queries) KickUser(ctx context.Context, arg KickUserParams) error {
+	_, err := q.db.Exec(ctx, kickUser, arg.UserID, arg.WorkspaceID)
 	return err
 }
 
