@@ -12,6 +12,15 @@ import (
 )
 
 func (s *TaskTrackerServer) GetTasksFromBoard(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
+	wsID, err := s.Queries.GetBoardWorkspaceID(r.Context(), boardId)
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Доска не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	tasks, err := s.Queries.GetTasksFromBoard(r.Context(), boardId)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
@@ -62,6 +71,15 @@ func (s *TaskTrackerServer) GetTasksFromBoard(w http.ResponseWriter, r *http.Req
 }
 
 func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
+	wsID, err := s.Queries.GetBoardWorkspaceID(r.Context(), boardId)
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Доска не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	var body struct {
 		Title       string     `json:"title"`
 		Description string     `json:"description"`
@@ -129,6 +147,15 @@ func (s *TaskTrackerServer) CreateTask(w http.ResponseWriter, r *http.Request, b
 }
 
 func (s *TaskTrackerServer) ChangeTaskStatus(w http.ResponseWriter, r *http.Request, taskId int) {
+	wsID, err := s.Queries.GetTaskWorkspaceID(r.Context(), int32(taskId))
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Задача не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	var body struct {
 		Title       *string    `json:"title"`
 		Description *string    `json:"description"`
@@ -164,7 +191,7 @@ func (s *TaskTrackerServer) ChangeTaskStatus(w http.ResponseWriter, r *http.Requ
 			params.DueDate = pgtype.Date{Time: t, Valid: true}
 		}
 	}
-	err := s.Queries.UpdateTask(r.Context(), params)
+	err = s.Queries.UpdateTask(r.Context(), params)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
@@ -173,8 +200,17 @@ func (s *TaskTrackerServer) ChangeTaskStatus(w http.ResponseWriter, r *http.Requ
 }
 
 func (s *TaskTrackerServer) DeleteTask(w http.ResponseWriter, r *http.Request, taskId int) {
+	wsID, err := s.Queries.GetTaskWorkspaceID(r.Context(), int32(taskId))
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Задача не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	_ = s.Queries.DeleteAllBlockpointsForTask(r.Context(), int32(taskId))
-	err := s.Queries.DeleteTask(r.Context(), int32(taskId))
+	err = s.Queries.DeleteTask(r.Context(), int32(taskId))
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
@@ -183,6 +219,15 @@ func (s *TaskTrackerServer) DeleteTask(w http.ResponseWriter, r *http.Request, t
 }
 
 func (s *TaskTrackerServer) GetTaskBlockpoints(w http.ResponseWriter, r *http.Request, taskId int) {
+	wsID, err := s.Queries.GetTaskWorkspaceID(r.Context(), int32(taskId))
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Задача не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	blockpoints, err := s.Queries.GetTaskBlockpoints(r.Context(), int32(taskId))
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
@@ -195,6 +240,15 @@ func (s *TaskTrackerServer) GetTaskBlockpoints(w http.ResponseWriter, r *http.Re
 }
 
 func (s *TaskTrackerServer) AddBlockpoint(w http.ResponseWriter, r *http.Request, taskId int) {
+	wsID, err := s.Queries.GetTaskWorkspaceID(r.Context(), int32(taskId))
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Задача не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	var body struct {
 		BlockedByTaskId int `json:"blocked_by_task_id"`
 	}
@@ -206,7 +260,7 @@ func (s *TaskTrackerServer) AddBlockpoint(w http.ResponseWriter, r *http.Request
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Задача не может блокировать сама себя")
 		return
 	}
-	err := s.Queries.AddBlockpoint(r.Context(), db.AddBlockpointParams{
+	err = s.Queries.AddBlockpoint(r.Context(), db.AddBlockpointParams{
 		TaskID:          int32(taskId),
 		BlockedByTaskID: int32(body.BlockedByTaskId),
 	})
@@ -218,7 +272,16 @@ func (s *TaskTrackerServer) AddBlockpoint(w http.ResponseWriter, r *http.Request
 }
 
 func (s *TaskTrackerServer) RemoveBlockpoint(w http.ResponseWriter, r *http.Request, taskId int, blockedByTaskId int) {
-	err := s.Queries.RemoveBlockpoint(r.Context(), db.RemoveBlockpointParams{
+	wsID, err := s.Queries.GetTaskWorkspaceID(r.Context(), int32(taskId))
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Задача не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
+	err = s.Queries.RemoveBlockpoint(r.Context(), db.RemoveBlockpointParams{
 		TaskID:          int32(taskId),
 		BlockedByTaskID: int32(blockedByTaskId),
 	})

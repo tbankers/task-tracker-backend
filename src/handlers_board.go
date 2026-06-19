@@ -14,6 +14,10 @@ import (
 )
 
 func (s *TaskTrackerServer) GetWorkspaceBoards(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID) {
+	if err := checkAccess(r.Context(), s.Queries, r, workspaceId); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	boards, err := s.Queries.GetWorkspaceBoards(r.Context(), &workspaceId)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
@@ -40,6 +44,10 @@ func (s *TaskTrackerServer) GetWorkspaceBoards(w http.ResponseWriter, r *http.Re
 }
 
 func (s *TaskTrackerServer) CreateBoard(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID) {
+	if err := checkAccess(r.Context(), s.Queries, r, workspaceId); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	var body api.CreateBoardJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
@@ -70,6 +78,15 @@ func (s *TaskTrackerServer) CreateBoard(w http.ResponseWriter, r *http.Request, 
 }
 
 func (s *TaskTrackerServer) EditBoard(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
+	wsID, err := s.Queries.GetBoardWorkspaceID(r.Context(), boardId)
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Доска не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	var body api.EditBoardJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
@@ -89,7 +106,16 @@ func (s *TaskTrackerServer) EditBoard(w http.ResponseWriter, r *http.Request, bo
 }
 
 func (s *TaskTrackerServer) DeleteBoard(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
-	err := s.Queries.DeleteBoard(r.Context(), boardId)
+	wsID, err := s.Queries.GetBoardWorkspaceID(r.Context(), boardId)
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Доска не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
+	err = s.Queries.DeleteBoard(r.Context(), boardId)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return
@@ -98,6 +124,15 @@ func (s *TaskTrackerServer) DeleteBoard(w http.ResponseWriter, r *http.Request, 
 }
 
 func (s *TaskTrackerServer) GetBoardColumns(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
+	wsID, err := s.Queries.GetBoardWorkspaceID(r.Context(), boardId)
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Доска не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	columns, err := s.Queries.GetColumnsFromBoard(r.Context(), boardId)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
@@ -120,6 +155,15 @@ func (s *TaskTrackerServer) GetBoardColumns(w http.ResponseWriter, r *http.Reque
 }
 
 func (s *TaskTrackerServer) CreateColumn(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
+	wsID, err := s.Queries.GetBoardWorkspaceID(r.Context(), boardId)
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Доска не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	var body api.CreateColumnJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
@@ -151,7 +195,16 @@ func (s *TaskTrackerServer) CreateColumn(w http.ResponseWriter, r *http.Request,
 }
 
 func (s *TaskTrackerServer) DeleteColumn(w http.ResponseWriter, r *http.Request, columnId openapi_types.UUID) {
-	err := s.Queries.DeleteColumn(r.Context(), columnId)
+	wsID, err := s.Queries.GetColumnWorkspaceID(r.Context(), columnId)
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Колонка не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
+	err = s.Queries.DeleteColumn(r.Context(), columnId)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return

@@ -11,6 +11,10 @@ import (
 )
 
 func (s *TaskTrackerServer) AddMember(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID) {
+	if err := checkAccess(r.Context(), s.Queries, r, workspaceId); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	var body api.AddMemberJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
@@ -45,6 +49,10 @@ func (s *TaskTrackerServer) AddMember(w http.ResponseWriter, r *http.Request, wo
 }
 
 func (s *TaskTrackerServer) ListMembers(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID) {
+	if err := checkAccess(r.Context(), s.Queries, r, workspaceId); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	members, err := s.Queries.GetWorkspaceMembers(r.Context(), workspaceId)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
@@ -67,6 +75,10 @@ func (s *TaskTrackerServer) ListMembers(w http.ResponseWriter, r *http.Request, 
 }
 
 func (s *TaskTrackerServer) KickUser(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID, userId uuid.UUID) {
+	if err := checkAccess(r.Context(), s.Queries, r, workspaceId); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	err := s.Queries.KickUser(r.Context(), db.KickUserParams{
 		UserID:      userId,
 		WorkspaceID: workspaceId,
@@ -79,6 +91,10 @@ func (s *TaskTrackerServer) KickUser(w http.ResponseWriter, r *http.Request, wor
 }
 
 func (s *TaskTrackerServer) ManageMember(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID, userId uuid.UUID) {
+	if err := checkAccess(r.Context(), s.Queries, r, workspaceId); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	var body api.ManageMemberJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
@@ -96,6 +112,10 @@ func (s *TaskTrackerServer) ManageMember(w http.ResponseWriter, r *http.Request,
 }
 
 func (s *TaskTrackerServer) GetMemberRoleById(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID, userId uuid.UUID) {
+	if err := checkAccess(r.Context(), s.Queries, r, workspaceId); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	role, err := s.Queries.GetMemberRoleById(r.Context(), userId)
 	if err != nil {
 		sendError(w, http.StatusNotFound, "NOT_FOUND", "Участник не найден")

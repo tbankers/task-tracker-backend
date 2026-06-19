@@ -55,6 +55,11 @@ func (s *TaskTrackerServer) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *TaskTrackerServer) GetUserById(w http.ResponseWriter, r *http.Request, userId uuid.UUID) {
+	currentUserID := getUserID(r)
+	if currentUserID != userId.String() {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к данным другого пользователя")
+		return
+	}
 	user, err := s.Queries.GetUserById(r.Context(), userId)
 	if err != nil {
 		sendError(w, http.StatusNotFound, "NOT_FOUND", "Пользователь не найден")
@@ -70,6 +75,11 @@ func (s *TaskTrackerServer) GetUserById(w http.ResponseWriter, r *http.Request, 
 }
 
 func (s *TaskTrackerServer) ChangePassword(w http.ResponseWriter, r *http.Request, userId uuid.UUID) {
+	currentUserID := getUserID(r)
+	if currentUserID != userId.String() {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к данным другого пользователя")
+		return
+	}
 	var body api.ChangePasswordJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
@@ -99,6 +109,11 @@ func (s *TaskTrackerServer) ChangePassword(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *TaskTrackerServer) GetUserWorkspace(w http.ResponseWriter, r *http.Request, userId uuid.UUID) {
+	currentUserID := getUserID(r)
+	if currentUserID != userId.String() {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к данным другого пользователя")
+		return
+	}
 	workspaces, err := s.Queries.GetAllUserWorkspaces(r.Context(), userId)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())

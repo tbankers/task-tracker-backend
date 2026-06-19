@@ -969,3 +969,47 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) error {
 	)
 	return err
 }
+
+// =========================================================================
+// AUTHORIZATION QUERIES
+// =========================================================================
+
+const isWorkspaceMember = `SELECT EXISTS(SELECT 1 FROM workspace_members WHERE user_id = $1 AND workspace_id = $2)`
+
+func (q *Queries) IsWorkspaceMember(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) (bool, error) {
+	var exists bool
+	err := q.db.QueryRow(ctx, isWorkspaceMember, userID, workspaceID).Scan(&exists)
+	return exists, err
+}
+
+const getBoardWorkspaceID = `SELECT workspace_id FROM boards WHERE board_id = $1`
+
+func (q *Queries) GetBoardWorkspaceID(ctx context.Context, boardID uuid.UUID) (uuid.UUID, error) {
+	var workspaceID uuid.UUID
+	err := q.db.QueryRow(ctx, getBoardWorkspaceID, boardID).Scan(&workspaceID)
+	return workspaceID, err
+}
+
+const getColumnWorkspaceID = `SELECT b.workspace_id FROM columns c JOIN boards b ON c.board_id = b.board_id WHERE c.column_id = $1`
+
+func (q *Queries) GetColumnWorkspaceID(ctx context.Context, columnID uuid.UUID) (uuid.UUID, error) {
+	var workspaceID uuid.UUID
+	err := q.db.QueryRow(ctx, getColumnWorkspaceID, columnID).Scan(&workspaceID)
+	return workspaceID, err
+}
+
+const getTaskWorkspaceID = `SELECT b.workspace_id FROM tasks t JOIN columns c ON t.column_id = c.column_id JOIN boards b ON c.board_id = b.board_id WHERE t.task_id = $1`
+
+func (q *Queries) GetTaskWorkspaceID(ctx context.Context, taskID int32) (uuid.UUID, error) {
+	var workspaceID uuid.UUID
+	err := q.db.QueryRow(ctx, getTaskWorkspaceID, taskID).Scan(&workspaceID)
+	return workspaceID, err
+}
+
+const getCommentWorkspaceID = `SELECT b.workspace_id FROM comments cm JOIN boards b ON cm.board_id = b.board_id WHERE cm.comment_id = $1`
+
+func (q *Queries) GetCommentWorkspaceID(ctx context.Context, commentID int32) (uuid.UUID, error) {
+	var workspaceID uuid.UUID
+	err := q.db.QueryRow(ctx, getCommentWorkspaceID, commentID).Scan(&workspaceID)
+	return workspaceID, err
+}

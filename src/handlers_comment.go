@@ -11,6 +11,15 @@ import (
 )
 
 func (s *TaskTrackerServer) GetBoardComments(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
+	wsID, err := s.Queries.GetBoardWorkspaceID(r.Context(), boardId)
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Доска не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	comments, err := s.Queries.GetCommentsByBoard(r.Context(), &boardId)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
@@ -33,6 +42,15 @@ func (s *TaskTrackerServer) GetBoardComments(w http.ResponseWriter, r *http.Requ
 }
 
 func (s *TaskTrackerServer) CreateBoardComment(w http.ResponseWriter, r *http.Request, boardId uuid.UUID) {
+	wsID, err := s.Queries.GetBoardWorkspaceID(r.Context(), boardId)
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Доска не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	var body struct {
 		Content string `json:"content"`
 	}
@@ -68,6 +86,15 @@ func (s *TaskTrackerServer) CreateBoardComment(w http.ResponseWriter, r *http.Re
 }
 
 func (s *TaskTrackerServer) UpdateBoardComment(w http.ResponseWriter, r *http.Request, boardId uuid.UUID, commentId int) {
+	wsID, err := s.Queries.GetBoardWorkspaceID(r.Context(), boardId)
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Доска не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	var body struct {
 		Content string `json:"content"`
 	}
@@ -75,7 +102,7 @@ func (s *TaskTrackerServer) UpdateBoardComment(w http.ResponseWriter, r *http.Re
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
 		return
 	}
-	err := s.Queries.UpdateComment(r.Context(), db.UpdateCommentParams{
+	err = s.Queries.UpdateComment(r.Context(), db.UpdateCommentParams{
 		Content:   pgtype.Text{String: body.Content, Valid: true},
 		CommentID: int32(commentId),
 	})
@@ -101,7 +128,16 @@ func (s *TaskTrackerServer) UpdateBoardComment(w http.ResponseWriter, r *http.Re
 }
 
 func (s *TaskTrackerServer) DeleteBoardComment(w http.ResponseWriter, r *http.Request, boardId uuid.UUID, commentId int) {
-	err := s.Queries.DeleteComment(r.Context(), int32(commentId))
+	wsID, err := s.Queries.GetBoardWorkspaceID(r.Context(), boardId)
+	if err != nil {
+		sendError(w, http.StatusNotFound, "NOT_FOUND", "Доска не найдена")
+		return
+	}
+	if err := checkAccess(r.Context(), s.Queries, r, wsID); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
+	err = s.Queries.DeleteComment(r.Context(), int32(commentId))
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())
 		return

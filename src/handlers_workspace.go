@@ -45,6 +45,10 @@ func (s *TaskTrackerServer) CreateWorkspace(w http.ResponseWriter, r *http.Reque
 }
 
 func (s *TaskTrackerServer) GetUserWorkspaceById(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID) {
+	if err := checkAccess(r.Context(), s.Queries, r, workspaceId); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	ws, err := s.Queries.GetWorkspaceById(r.Context(), workspaceId)
 	if err != nil {
 		sendError(w, http.StatusNotFound, "NOT_FOUND", "Workspace не найден")
@@ -59,6 +63,10 @@ func (s *TaskTrackerServer) GetUserWorkspaceById(w http.ResponseWriter, r *http.
 }
 
 func (s *TaskTrackerServer) EditWorkspace(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID) {
+	if err := checkAccess(r.Context(), s.Queries, r, workspaceId); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	var body api.EditWorkspaceJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sendError(w, http.StatusBadRequest, "BAD_REQUEST", "Невалидный JSON")
@@ -78,6 +86,10 @@ func (s *TaskTrackerServer) EditWorkspace(w http.ResponseWriter, r *http.Request
 }
 
 func (s *TaskTrackerServer) DeleteWorkspace(w http.ResponseWriter, r *http.Request, workspaceId uuid.UUID) {
+	if err := checkAccess(r.Context(), s.Queries, r, workspaceId); err != nil {
+		sendError(w, http.StatusForbidden, "FORBIDDEN", "Нет доступа к воркспейсу")
+		return
+	}
 	err := s.Queries.DeleteWorkspace(r.Context(), workspaceId)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "DB_ERROR", err.Error())

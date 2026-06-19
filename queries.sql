@@ -226,3 +226,22 @@ DELETE FROM comments WHERE comment_id = $1;
 
 -- name: DeleteCommentsByBoard :exec
 DELETE FROM comments WHERE board_id = $1;
+
+-- =========================================================================
+-- AUTHORIZATION QUERIES
+-- =========================================================================
+
+-- name: IsWorkspaceMember :one
+SELECT EXISTS(SELECT 1 FROM workspace_members WHERE user_id = $1 AND workspace_id = $2);
+
+-- name: GetBoardWorkspaceID :one
+SELECT workspace_id FROM boards WHERE board_id = $1;
+
+-- name: GetColumnWorkspaceID :one
+SELECT b.workspace_id FROM columns c JOIN boards b ON c.board_id = b.board_id WHERE c.column_id = $1;
+
+-- name: GetTaskWorkspaceID :one
+SELECT b.workspace_id FROM tasks t JOIN columns c ON t.column_id = c.column_id JOIN boards b ON c.board_id = b.board_id WHERE t.task_id = $1;
+
+-- name: GetCommentWorkspaceID :one
+SELECT b.workspace_id FROM comments cm JOIN boards b ON cm.board_id = b.board_id WHERE cm.comment_id = $1;
