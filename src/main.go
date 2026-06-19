@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/tbankers/task-tracker-backend/api"
 	db "github.com/tbankers/task-tracker-backend/db"
@@ -17,7 +17,6 @@ import (
 
 type TaskTrackerServer struct {
 	Queries *db.Queries
-	DBConn  *pgx.Conn
 }
 
 func main() {
@@ -28,17 +27,20 @@ func main() {
 		dbURL = "postgres://postgres:password@localhost:5433/tasktracker?sslmode=disable"
 	}
 
-	conn, err := pgx.Connect(ctx, dbURL)
+	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		panic(fmt.Sprintf("Не удалось подключиться к БД: %v", err))
 	}
-	defer func() { _ = conn.Close(ctx) }()
+	defer pool.Close()
 
-	queries := db.New(conn)
+	if err := pool.Ping(ctx); err != nil {
+		panic(fmt.Sprintf("БД недоступна: %v", err))
+	}
+
+	queries := db.New(pool)
 
 	serverImpl := &TaskTrackerServer{
 		Queries: queries,
-		DBConn:  conn,
 	}
 
 	r := chi.NewRouter()
