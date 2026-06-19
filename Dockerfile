@@ -6,7 +6,7 @@ RUN go mod download
 RUN cd tools && go mod download
 COPY . .
 RUN cd tools && go tool oapi-codegen -config ../api/config.yaml ../api/api.yaml && mv ./api.gen.go ../api
-RUN CGO_ENABLED=0 GOOS=linux go build -o main main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o main ./src
 
 FROM alpine:3.20
 WORKDIR /app
