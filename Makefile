@@ -1,4 +1,4 @@
-.PHONY: compile-api openapi-format openapi-bundle openapi-bundle-format ssl-generate
+.PHONY: compile-api openapi-format openapi-bundle openapi-bundle-format ssl-generate start-prod start-dev clear-db-dev
 
 compile-api:#generate code
 	cd tools && go tool oapi-codegen -config ../api/config.yaml ../api/api.yaml && mv ./api.gen.go ../api
@@ -14,3 +14,10 @@ openapi-bundle-format:#from bundle to api
 
 ssl-generate:
 	cd ../task-tracker-frontend/ssl && ./generate.sh
+start-dev:
+	docker compose up --build
+start-prod:
+	docker compose -f docker-compose.prod.yaml pull
+	docker compose -f docker-compose.prod.yaml up
+clear-db-dev:
+	docker compose down -v
